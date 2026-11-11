@@ -1,0 +1,12 @@
+{
+  "name": "letsrunbike",
+  "version": "0.1.0",
+  "private": true,
+  "description": "유아 밸런스바이크 실내 연습 시뮬레이션",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

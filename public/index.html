@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>씽씽 밸런스바이크</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🚲%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <canvas id="game"></canvas>
+
+  <!-- 홈 -->
+  <section id="s-home" class="screen">
+    <h1 class="logo"><span>씽씽</span> 밸런스바이크</h1>
+    <button id="me-card" class="me-card" title="캐릭터 바꾸기">
+      <img id="me-face" alt="">
+      <b id="me-name"></b>
+      <small>눌러서 바꾸기</small>
+    </button>
+    <div class="row">
+      <button id="btn-solo" class="btn primary big">혼자 달리기</button>
+      <button id="btn-friends" class="btn blue big">친구랑 달리기</button>
+    </div>
+    <div class="corner">
+      <button id="btn-settings" class="btn small">⚙ 부모님 설정</button>
+      <button id="btn-full" class="btn small">⛶ 큰 화면</button>
+    </div>
+  </section>
+
+  <!-- 캐릭터 -->
+  <section id="s-avatar" class="screen">
+    <div class="panel">
+      <h2>누가 탈까요?</h2>
+      <div id="chars" class="grid"></div>
+      <label class="field">이름 <input id="name-input" maxlength="6" placeholder="이름" autocomplete="off"></label>
+      <button id="btn-avatar-ok" class="btn primary">좋아요!</button>
+    </div>
+  </section>
+
+  <!-- 친구랑: 방 만들기 / 들어가기 -->
+  <section id="s-join" class="screen">
+    <div class="panel">
+      <header><button class="btn small back" data-back>← 뒤로</button><h2>친구랑 달리기</h2></header>
+      <div class="cols">
+        <div class="box">
+          <h3>내가 방 만들기</h3>
+          <p>방 번호를 친구에게 알려주세요.</p>
+          <button id="btn-create" class="btn primary">방 만들기</button>
+        </div>
+        <div class="box">
+          <h3>친구 방에 들어가기</h3>
+          <input id="code-input" class="code-input" inputmode="numeric" maxlength="4" placeholder="방 번호 4자리" autocomplete="off">
+          <button id="btn-join" class="btn blue">들어가기</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 코스/NPC 선택 (혼자 · 방장 · 손님 공용) -->
+  <section id="s-setup" class="screen">
+    <div class="panel wide">
+      <header><button class="btn small back" data-back>← 뒤로</button><h2 id="setup-title">어디로 달릴까?</h2></header>
+      <div id="roombox" class="roombox" hidden>
+        <div class="roomcode">방 번호 <b id="room-code"></b><small id="room-url"></small></div>
+        <div id="room-players" class="players"></div>
+      </div>
+      <div id="setup-body">
+        <h3>코스</h3>
+        <div id="courses" class="courses"></div>
+        <div class="cols three">
+          <div><h3>같이 달릴 동물 친구</h3><div id="npcs" class="chips"></div></div>
+          <div><h3>동물 친구 빠르기</h3><div id="diffs" class="chips"></div></div>
+          <div><h3>거리</h3><div id="lens" class="chips"></div></div>
+        </div>
+      </div>
+      <button id="btn-start" class="btn primary big">출발!</button>
+      <p id="wait-msg" class="wait" hidden>방장 친구가 출발을 누르면 시작해요!</p>
+    </div>
+  </section>
+
+  <!-- 부모님 설정 -->
+  <section id="s-settings" class="screen">
+    <div class="panel wide">
+      <header><button class="btn small back" data-back>← 뒤로</button><h2>부모님 설정</h2></header>
+      <h3>속도 입력</h3>
+      <div id="set-mode" class="chips"></div>
+      <p id="mode-help" class="help"></p>
+      <div class="cols three">
+        <div><h3>자동 속도</h3><div class="stepper"><button data-step="autoKmh" data-d="-1">−</button><b id="v-autoKmh"></b><button data-step="autoKmh" data-d="1">+</button></div></div>
+        <div><h3>최고 속도(게이지)</h3><div class="stepper"><button data-step="maxKmh" data-d="-1">−</button><b id="v-maxKmh"></b><button data-step="maxKmh" data-d="1">+</button></div></div>
+        <div><h3>화면 속도감</h3><div id="set-vis" class="chips"></div></div>
+      </div>
+      <h3>바퀴 센서 (블루투스 속도 센서)</h3>
+      <div class="row left">
+        <div id="set-wheel" class="chips"></div>
+        <button id="btn-sensor" class="btn blue small">센서 연결</button>
+        <span id="sensor-status" class="help"></span>
+      </div>
+      <h3>소리</h3>
+      <div class="row left"><div id="set-music" class="chips"></div><div id="set-sfx" class="chips"></div></div>
+    </div>
+  </section>
+
+  <!-- 달리는 중 HUD -->
+  <div id="hud" hidden>
+    <div id="progress"><div id="progress-fill"></div><span class="goal">🏁</span></div>
+    <div id="rank"><b id="rank-n">1</b>등</div>
+    <div id="stars">⭐ <b id="star-n">0</b></div>
+    <button id="btn-pause" class="btn small">Ⅱ</button>
+    <div id="speedo">
+      <svg viewBox="0 0 120 70"><path class="bg" d="M10 62 A50 50 0 0 1 110 62"/><path id="gauge" pathLength="100" d="M10 62 A50 50 0 0 1 110 62"/></svg>
+      <b id="kmh">0.0</b><small>km/h</small>
+    </div>
+    <div id="distinfo"></div>
+    <div id="ctrl-auto" class="ctrl" hidden>
+      <button id="btn-slower" class="btn small">−</button>
+      <button id="btn-go" class="btn primary small">멈춤</button>
+      <button id="btn-faster" class="btn small">+</button>
+    </div>
+    <div id="ctrl-push" class="ctrl" hidden><span class="hint">화면이나 스페이스바를 꾹 누르면 달려요</span></div>
+    <div id="ctrl-sensor" class="ctrl" hidden><button id="btn-sensor2" class="btn blue small">센서 연결</button></div>
+    <div id="big"></div>
+  </div>
+
+  <!-- 일시정지 -->
+  <section id="s-pause" class="screen dim">
+    <div class="panel">
+      <h2>잠깐 쉬어요</h2>
+      <div class="row">
+        <button id="btn-resume" class="btn primary">계속 달리기</button>
+        <button id="btn-quit" class="btn">그만하기</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 결과 -->
+  <section id="s-result" class="screen">
+    <div class="panel">
+      <h2 id="result-title">도착! 참 잘했어요!</h2>
+      <div id="result-list" class="result-list"></div>
+      <div id="result-stats" class="stats"></div>
+      <div class="row">
+        <button id="btn-again" class="btn primary">한 번 더!</button>
+        <button id="btn-home" class="btn">처음으로</button>
+      </div>
+      <p id="result-wait" class="wait" hidden>방장 친구가 다시 시작할 수 있어요.</p>
+    </div>
+  </section>
+
+  <div id="toast"></div>
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>

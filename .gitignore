@@ -1,0 +1,4 @@
+node_modules/
+.playwright-mcp/
+CLAUDE.md
+Introduce.md
