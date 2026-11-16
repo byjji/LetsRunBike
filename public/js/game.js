@@ -19,7 +19,7 @@ export function rng(seed) {
 
 const MAX_YAW = 0.6;          // the road never turns further than this from its starting direction
 
-/** city: see cities.js. Returns { segs:[{curve, line}], start, finish, units, seed }. */
+/** city: see cities.js. Returns { segs:[{curve, line}], start, finish, units, seed, lengthM }. */
 export function buildTrack(city, lengthM, upm, seed) {
   const r = rng(seed);
   const units = Math.round(lengthM * upm);
@@ -52,7 +52,7 @@ export function buildTrack(city, lengthM, upm, seed) {
   const finish = PAD + units;
   segs[PAD].line = 1;
   segs[finish].line = 2; segs[finish + 1].line = 3;
-  return { segs, start: PAD, finish, units, seed };
+  return { segs, start: PAD, finish, units, seed, lengthM };
 }
 
 export class Race {
