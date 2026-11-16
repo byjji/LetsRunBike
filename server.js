@@ -69,7 +69,7 @@ const num = (v) => (Number.isFinite(+v) ? +v : 0);
 
 function cleanConfig(c = {}) {
   return {
-    course: /^[a-z]{1,12}$/.test(c.course) ? c.course : 'forest',
+    course: /^[a-z]{1,12}$/.test(c.course) ? c.course : 'seoul',
     npc: int(c.npc, 0, 5, 2),
     diff: int(c.diff, 0, 2, 1),
     len: int(c.len, 50, 3000, 400),

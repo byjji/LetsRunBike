@@ -1,5 +1,6 @@
 // Race simulation: track building, riders (me / remote friends / NPC), stars, ranking.
-import { RW } from './render.js';
+import { RW, TURN } from './path.js';
+import { spanOf } from './cities.js';
 import { CHARS, charById } from './sprites.js';
 
 const PAD = 30;               // segments before the start line
@@ -16,50 +17,57 @@ export function rng(seed) {
   };
 }
 
-export function buildTrack(course, lengthM, upm, seed) {
+const MAX_YAW = 0.6;          // the road never turns further than this from its starting direction
+
+/** city: see cities.js. Returns { segs:[{curve, line}], start, finish, units, seed }. */
+export function buildTrack(city, lengthM, upm, seed) {
   const r = rng(seed);
   const units = Math.round(lengthM * upm);
   const total = PAD + units + 260;
-  const segs = Array.from({ length: total }, () => ({ curve: 0, sprites: [], line: 0 }));
+  const segs = Array.from({ length: total }, () => ({ curve: 0, line: 0 }));
 
-  // gentle S-curves
+  // stretches that must stay straight: landmarks the road passes through
+  const zones = city.landmarks.filter((l) => l.through).map((l) => {
+    const mid = PAD + Math.round(l.at * units), span = spanOf(l, units);
+    return [Math.floor(mid - span / 2 - 5), Math.ceil(mid + span / 2 + 5)];
+  });
+  const blocked = (a, b) => zones.find((z) => a <= z[1] && b >= z[0]);
+
+  // gentle S-curves that steer back toward the starting direction
+  let yaw = 0;
   for (let i = PAD + 12; i < total - 20;) {
     i += 15 + Math.floor(r() * 35);
-    const len = 40 + Math.floor(r() * 60), mag = (r() < 0.5 ? -1 : 1) * (0.0015 + r() * 0.005);
-    for (let k = 0; k < len && i + k < total; k++) segs[i + k].curve = mag * Math.sin((Math.PI * k) / len);
+    const len = 40 + Math.floor(r() * 60);
+    let mag = 0.0015 + r() * 0.005, sign = r() < 0.5 ? -1 : 1;
+    const z = blocked(i, i + len);
+    if (z) { i = z[1] + 1; continue; }
+    const shape = (k) => Math.sin((Math.PI * k) / len);
+    let sum = 0;
+    for (let k = 0; k < len; k++) sum += shape(k);
+    mag = Math.min(mag, 0.5 / (sum * TURN));
+    if (Math.abs(yaw + sign * mag * sum * TURN) > MAX_YAW) sign = -sign;
+    for (let k = 0; k < len && i + k < total; k++) { segs[i + k].curve = sign * mag * shape(k); yaw += segs[i + k].curve * TURN; }
     i += len;
   }
-  // roadside scenery
-  for (let i = 0; i < total; i++) {
-    for (const rule of course.scenery) {
-      if (r() >= rule.p) continue;
-      const side = rule.side || (r() < 0.5 ? -1 : 1);
-      const n = rule.n[Math.floor(r() * rule.n.length)];
-      segs[i].sprites.push({ n, x: side * (RW + rule.min + r() * (rule.max - rule.min)) });
-    }
-    segs[i].sprites.sort((a, b) => Math.abs(b.x) - Math.abs(a.x));
-  }
   const finish = PAD + units;
-  segs[PAD].sprites.push({ n: 'gateStart', x: 0 }); segs[PAD].line = 1;
-  segs[finish].sprites.push({ n: 'gateFinish', x: 0 }); segs[finish].line = 2; segs[finish + 1].line = 3;
-  for (let m = 100; m < lengthM; m += 100) segs[PAD + Math.round(m * upm)].sprites.push({ n: `sign:${m}m`, x: -(RW + 1.4) });
-  return { segs, start: PAD, finish };
+  segs[PAD].line = 1;
+  segs[finish].line = 2; segs[finish + 1].line = 3;
+  return { segs, start: PAD, finish, units, seed };
 }
 
 export class Race {
-  /** o: { course, lengthM, npc, diff, seed, vis, players:[{id,name,char}], myId, sim } */
+  /** o: { city, lengthM, npc, diff, seed, vis, players:[{id,name,char}], myId, sim } */
   constructor(o) {
-    this.course = o.course;
+    this.city = o.city;
     this.lengthM = o.lengthM;
     this.upm = BASE_UPM * o.vis;
-    this.track = buildTrack(o.course, o.lengthM, this.upm, o.seed);
+    this.track = buildTrack(o.city, o.lengthM, this.upm, o.seed);
     this.sim = o.sim; // true → this client simulates the NPCs (solo, or room host)
     this.on = () => {};
     this.clock = -4;
     this.lastCount = 0;
     this.started = false;
     this.ref = 0;
-    this.sky = 0;
     this.starCount = 0;
     this.maxSpeed = 0;
     this.hundreds = 0;
@@ -88,6 +96,8 @@ export class Race {
     this.stars = [];
     for (let m = 12; m < o.lengthM - 3; m += 12) this.stars.push({ m, got: false });
     this.nextStar = 0;
+    this.marks = o.city.landmarks.map((l) => ({ m: l.at * o.lengthM, name: l.name }));
+    this.nextMark = 0;
   }
 
   layoutLanes() {
@@ -149,11 +159,9 @@ export class Race {
       this.starCount++;
       this.on('star', this.starCount);
     }
+    while (this.nextMark < this.marks.length && me.dist >= this.marks[this.nextMark].m) this.on('landmark', this.marks[this.nextMark++].name);
     const h = Math.floor(me.dist / 100);
     if (h > this.hundreds && me.dist < this.lengthM) { this.hundreds = h; this.on('milestone', h * 100); }
-
-    const seg = this.track.segs[Math.floor(this.track.start + me.dist * this.upm)];
-    if (seg) this.sky += seg.curve * me.speed * this.upm * dt * 6;
   }
 
   rank() {
@@ -175,7 +183,7 @@ export class Race {
       const seg = track.segs[Math.floor(z)];
       items.push({ kind: 'rider', z, x: r.x, ch: r.ch, phase: r.phase, lean: seg ? seg.curve * 22 * Math.min(1, r.speed) : 0, name: r.name, me: r === me });
     }
-    return { course: this.course, track, camPos, camX: me.x * 0.85, items, t, skyOff: this.sky, speed01: Math.min(1, me.speed / maxSpeed) };
+    return { city: this.city, track, camPos, camX: me.x * 0.85, items, t, speed01: Math.min(1, me.speed / maxSpeed) };
   }
 
   // ---------- network ----------
