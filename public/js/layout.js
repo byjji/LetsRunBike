@@ -1,6 +1,6 @@
 // Where things stand along the road. Pure and deterministic: same city + track + seed → same layout
 // on every screen, so friends in a room see the same world.
-import { RW } from './path.js';
+import { RW, buildPath, sample } from './path.js';
 import { spanOf } from './cities.js';
 
 function rng(seed) {
@@ -42,6 +42,7 @@ export function layoutCity(city, track, lengthUnits, seed) {
   // roadside props (kept off the lanes that trains, trams and boats travel along)
   const lanes = city.ambient.filter((a) => a.type === 'mover' && !a.onlyThrough).map((a) => a.lateral);
   const props = [];
+  const path = buildPath(track.segs), far = [], o = {};   // far props are checked in world space: on bends the land folds over itself
   for (let i = 0; i < total; i++) {
     for (const rule of city.roadside) {
       if (r() >= rule.p) continue;
@@ -56,7 +57,7 @@ export function layoutCity(city, track, lengthUnits, seed) {
       const lateral = side * dist;
       if (besides.some((m) => Math.hypot(s - m.s, lateral - m.lateral) < keepOut(m.def))) continue;
       // footprint: far-off rules are buildings, near ones are trees and small things
-      const rad = rule.min >= 20 ? 9 : rule.min >= 8 ? 5.5 : rule.min >= 2 ? 1.6 : 0.6;
+      const rad = rule.r ?? (rule.min >= 20 ? 9 : rule.min >= 8 ? 5.5 : rule.min >= 2 ? 1.6 : 0.6);
       if (lanes.some((l) => Math.abs(lateral - l) < 2.6 + rad)) continue;
       let clash = false;
       for (let k = props.length - 1; k >= 0 && s - props[k].s < 20; k--) {
@@ -64,7 +65,17 @@ export function layoutCity(city, track, lengthUnits, seed) {
         if (Math.hypot(s - q.s, lateral - q.lateral) < rad + q.r) { clash = true; break; }
       }
       if (clash) continue;
-      props.push({ n, s, lateral, rot, scale, r: rad });
+      const k = rule.scale || 1;
+      if (dist >= 24) {
+        sample(path, s, lateral, o);
+        const x = o.x, z = o.z, lo = Math.max(0, Math.floor(s - dist * 2.2)), hi = Math.min(path.n, Math.ceil(s + dist * 2.2));
+        let bad = false;
+        for (let j = lo; j <= hi && !bad; j++) bad = Math.hypot(x - path.x[j], z - path.z[j]) < Math.min(dist - 1, RW + 9 + rad);
+        for (let j = far.length - 1; j >= 0 && !bad; j--) bad = Math.hypot(x - far[j].x, z - far[j].z) < rad + far[j].r;
+        if (bad) continue;
+        far.push({ x, z, r: rad });
+      }
+      props.push(k === 1 ? { n, s, lateral, rot, scale, r: rad } : { n, s, lateral, rot, scale, r: rad, k });
     }
   }
 

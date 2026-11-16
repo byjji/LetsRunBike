@@ -46,3 +46,22 @@ for (const c of CITIES) test(`탈것 길에는 소품이 없다: ${c.id}`, () =>
   const lanes = c.ambient.filter((a) => a.type === 'mover' && !a.onlyThrough).map((a) => a.lateral);
   for (const p of L.props) for (const l of lanes) assert.ok(Math.abs(p.lateral - l) >= 2.6 + p.r - 1e-6, `${p.n} @${p.lateral} lane ${l}`);
 });
+
+// ---- far scenery: the land beyond the roadside is filled, and none of it lands on the road
+import { buildPath, sample } from '../public/js/path.js';
+for (const c of CITIES) {
+  test(`먼 풍경: ${c.id}`, () => {
+    const t = buildTrack(c, 400, 2.3, 11), L = layoutCity(c, t, 920, 11), path = buildPath(t.segs), o = {};
+    for (const side of [-1, 1]) {
+      const land = c.sides[side < 0 ? 'left' : 'right'] !== 'water';
+      const far = L.props.filter((p) => Math.sign(p.lateral) === side && Math.abs(p.lateral) > 70);
+      if (land) assert.ok(far.length >= 40, `먼 풍경 부족 ${side}: ${far.length}`);
+      else assert.equal(far.length, 0);
+    }
+    for (const p of L.props) {
+      if (Math.abs(p.lateral) < 24) continue;
+      sample(path, p.s, p.lateral, o);
+      for (let i = 0; i <= path.n; i += 2) assert.ok(Math.hypot(o.x - path.x[i], o.z - path.z[i]) > RW + 6, `길에 걸친 먼 소품 ${p.n}`);
+    }
+  });
+}

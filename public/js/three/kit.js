@@ -28,6 +28,8 @@ export function cyl(rTop, rBottom, h, color, seg = 12, opts) { const g = new THR
 export function cone(r, h, color, seg = 12, opts) { const g = new THREE.ConeGeometry(r, h, seg); g.translate(0, h / 2, 0); return mesh(g, color, opts); }
 /** Sphere centred on the origin. */
 export function sphere(r, color, seg = 10, opts) { return mesh(new THREE.SphereGeometry(r, seg, Math.max(6, Math.round(seg * 0.7))), color, opts); }
+/** Chunky 20-face ball: the cheapest round shape, for things seen from far away. */
+export function ico(r, color) { return mesh(new THREE.IcosahedronGeometry(r, 0), color); }
 /** Upper half of a sphere, flat side on y = 0. */
 export function dome(r, color, seg = 12, opts) { return mesh(new THREE.SphereGeometry(r, seg, Math.max(4, seg >> 1), 0, Math.PI * 2, 0, Math.PI / 2), color, opts); }
 /** Flat horizontal rectangle (w along x, d along z) facing up. */

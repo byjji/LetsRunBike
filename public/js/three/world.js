@@ -129,7 +129,7 @@ export class World {
     for (let i = 2; i < n - 2; i += 2) for (const side of [-1, 1]) {
       if (hash(i * 2 + side) > 0.55 || onBridge(i)) continue;
       const water = city.sides[side < 0 ? 'left' : 'right'] === 'water';
-      const size = 2.5 + hash(i * 3.1 + side) * 6, lat = RW + 1.6 + size + hash(i * 5.3 + side) * (water ? 0 : 46);
+      const reach = hash(i * 5.3 + side), size = (2.5 + hash(i * 3.1 + side) * 6) * (water ? 1 : 1 + reach * 2.2), lat = RW + 1.6 + size + reach * (water ? 0 : 150);
       if (water && lat + size > SHORE) continue;
       spots.push({ s: i + hash(i * 7.7), lat: side * lat, size, tone: hash(i * 11.3 + side) });
     }
@@ -204,11 +204,12 @@ export class World {
     // low hills all round the horizon (not out at sea), tinted toward the sky for depth
     const hillCol = '#' + new THREE.Color(city.ground[0]).lerp(new THREE.Color(city.fog), 0.5).getHexString(), hills = new THREE.Group();
     const hh = (v) => { const x = Math.sin(v * 37.3 + 1.7) * 43758.5453; return x - Math.floor(x); };
-    for (let i = 0; i < 20; i++) {
-      const a = (i / 20) * Math.PI * 2 + 0.13, side = Math.sin(a) > 0 ? 'right' : 'left';
+    const hillNear = '#' + new THREE.Color(city.ground[0]).lerp(new THREE.Color(city.fog), 0.28).getHexString();
+    for (let i = 0; i < 44; i++) {
+      const near = i >= 20, a = (i / (near ? 24 : 20)) * Math.PI * 2 + (near ? 0.4 : 0.13), side = Math.sin(a) > 0 ? 'right' : 'left';
       if (city.sides[side] === 'water' && Math.abs(Math.sin(a)) > 0.25) continue;
-      const d = 800 + hh(i) * 140, r = 110 + hh(i + 30) * 90, h = 28 + hh(i + 60) * 58;
-      const m = sphere(r, hillCol, 9); m.scale.set(1.5, h / r, 0.5);
+      const d = (near ? 640 : 800) + hh(i) * (near ? 70 : 140), r = (near ? 70 : 110) + hh(i + 30) * (near ? 60 : 90), h = (near ? 14 : 28) + hh(i + 60) * (near ? 26 : 58);
+      const m = sphere(r, near ? hillNear : hillCol, 9); m.scale.set(1.5, h / r, 0.5);
       m.position.set(-Math.sin(a) * d, 0, Math.cos(a) * d); m.rotation.y = Math.atan2(Math.sin(a), -Math.cos(a));
       hills.add(m);
     }
@@ -278,7 +279,7 @@ export class World {
     const CHUNK = 120, buckets = new Map();
     for (const p of layout.props) {
       if (!PROPS[p.n]) continue;
-      const key = p.n + '|' + Math.floor(p.s / CHUNK);
+      const key = p.n + '|' + (p.r >= 6 ? 'f' + Math.floor(p.s / (CHUNK * 2.5)) : Math.floor(p.s / CHUNK));   // far scenery: bigger batches, fewer draw calls
       let b = buckets.get(key); if (!b) buckets.set(key, b = []);
       b.push(p);
     }
@@ -300,12 +301,15 @@ export class World {
         sample(this.path, p.s, p.lateral, _p);
         dummy.position.set(_p.x, 0, _p.z);
         dummy.rotation.y = def.face ? _p.yaw + (p.lateral > 0 ? 1 : -1) * (Math.PI / 2 + 0.25) : p.rot;
-        dummy.scale.setScalar(def.face ? 0.92 + (p.scale - 0.85) * 0.45 : p.scale);
+        dummy.scale.setScalar((def.face ? 0.92 + (p.scale - 0.85) * 0.45 : p.scale) * (p.k || 1));
+        if (p.k && def.face) dummy.scale.y *= 0.7 + ((p.rot * 7) % 1) * 0.9;      // far buildings: mixed heights make a skyline
         dummy.updateMatrix();
         im.setMatrixAt(i, dummy.matrix);
-        const ck = key.split('|')[1]; let sh = shadows.get(ck); if (!sh) shadows.set(ck, sh = []);
-        const room = Math.max(0.3, (Math.abs(p.lateral) - RW - 0.6) / 1.6);    // never spill onto the road
-        sh.push({ x: _p.x, z: _p.z, rot: dummy.rotation.y, sx: Math.min(room, pr.hx * dummy.scale.x), sz: Math.min(room, pr.hz * dummy.scale.x) });
+        if (!p.k) {                      // the deep band is too far away for a shadow to show
+          const ck = key.split('|')[1]; let sh = shadows.get(ck); if (!sh) shadows.set(ck, sh = []);
+          const room = Math.max(0.3, (Math.abs(p.lateral) - RW - 0.6) / 1.6);    // never spill onto the road
+          sh.push({ x: _p.x, z: _p.z, rot: dummy.rotation.y, sx: Math.min(room, pr.hx * dummy.scale.x), sz: Math.min(room, pr.hz * dummy.scale.x) });
+        }
         const k = Math.floor(p.rot * 1000);
         if (pr.tints.length) tint.copy(pr.tints[k % pr.tints.length]); else tint.setScalar(0.9 + ((k % 7) / 7) * 0.16);
         im.setColorAt(i, tint);

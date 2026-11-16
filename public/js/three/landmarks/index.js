@@ -14,12 +14,29 @@ export const LANDMARKS = { ...KR, ...KR2, ...JP, ...US };
 /** Coded landmark, baked. Beside-the-road landmarks are scaled so their top is at def.h. */
 export function buildLandmark(def, span = def.span) {
   const g = bake(LANDMARKS[def.id](span));
-  return def.through ? g : fit(g, def.h);
+  return def.through ? g : fit(g, def);
 }
 
-function fit(g, h) {
+export const LEAN = 0.3;      // beside-the-road landmarks are turned this much toward the oncoming rider
+/** How far a placed landmark reaches from its centre toward the road (parts under water do not count). */
+export function reach(g, side) {
+  const c = Math.cos(LEAN), s = Math.sin(LEAN) * (side < 0 ? -1 : 1), v = new THREE.Vector3();
+  let far = 0;
+  g.updateMatrixWorld(true);
+  g.traverse((o) => {
+    if (!o.isMesh) return;
+    const p = o.geometry.attributes.position;
+    for (let i = 0; i < p.count; i++) { v.fromBufferAttribute(p, i).applyMatrix4(o.matrixWorld); if (v.y > -0.5) far = Math.max(far, v.z * c + v.x * s); }
+  });
+  return far;
+}
+
+/** Scale to the wanted height, then smaller if the base would spread onto the road. */
+function fit(g, def) {
   const box = new THREE.Box3().setFromObject(g);
-  if (h > 0 && box.max.y > 0) g.scale.multiplyScalar(h / box.max.y);
+  if (def.h > 0 && box.max.y > 0) g.scale.multiplyScalar(def.h / box.max.y);
+  const r = reach(g, def.side), room = def.offset - 2.5;
+  if (r > room && room > 0) g.scale.multiplyScalar(room / r);
   return g;
 }
 
@@ -42,7 +59,7 @@ export async function loadLandmark(def, { loadModel = defaultLoadModel, span = d
         const box = new THREE.Box3().setFromObject(obj);
         obj.position.y -= box.min.y;                     // stand it on the ground
         const holder = new THREE.Group(); holder.add(obj);
-        return fit(holder, def.h);
+        return fit(holder, def);
       }
       return obj;
     } catch { /* fall back to the coded landmark */ }

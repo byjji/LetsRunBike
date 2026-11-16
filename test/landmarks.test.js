@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as THREE from 'three';
-import { LANDMARKS, loadLandmark, clearance } from '../public/js/three/landmarks/index.js';
+import { LANDMARKS, loadLandmark, clearance, reach } from '../public/js/three/landmarks/index.js';
 import { CITIES } from '../public/js/cities.js';
 
 for (const c of CITIES) {
@@ -10,7 +10,10 @@ for (const c of CITIES) {
     const g = await loadLandmark(l), box = new THREE.Box3().setFromObject(g);
     assert.ok(Math.abs(box.min.y) < 0.6 || l.through || l.wet, '바닥');
     if (l.through) for (const span of [6, 32, l.span]) assert.ok(clearance(await loadLandmark(l, { span })), `통과 공간 막힘 span=${span}`);
-    else assert.ok(Math.abs(box.max.y - l.h) < 0.5, '목표 높이');
+    else {
+      assert.ok(box.max.y < l.h + 0.5 && box.max.y > l.h * 0.6, `목표 높이 ${box.max.y.toFixed(1)} / ${l.h}`);
+      assert.ok(reach(g, l.side) <= l.offset - 2, `길을 덮음: ${reach(g, l.side).toFixed(1)} > ${l.offset}`);
+    }
     let tris = 0; g.traverse((o) => { if (o.isMesh) tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3; });
     assert.ok(tris > 40 && tris < 20000, `삼각형 ${tris}`);
   });

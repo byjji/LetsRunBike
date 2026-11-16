@@ -2,11 +2,13 @@
 //   sway: how much the top bends in the wind (0 = rigid)
 //   face: true → front (+z) is turned toward the road instead of a random direction
 //   tints: optional colours; one is picked per instance and multiplied over the model
-import { box, cyl, cone, sphere, dome, beam, prism, at, group } from './kit.js';
+import { box, cyl, cone, sphere, dome, ico, beam, prism, at, group } from './kit.js';
 import { tileRoof, gableRoof, windowBands, hall } from './parts.js';
 
 const TRUNK = '#9a6b45';
 const blob = (r, color, x, y, z, s) => at(sphere(r, color, 7), x, y, z, 0, s);
+// chunky 20-face lump for small things that are scattered by the hundred
+const chip = (r, color, x, y, z, s) => at(ico(r, color), x, y, z, r * 7 + x, s);
 
 function roundTree(leaf, leaf2, h = 5) {
   return group(
@@ -26,7 +28,28 @@ function tower(w, d, h, wall, glass, floors) {
   return group(at(box(w, h, d, wall), 0, 0, 0), ...windowBands(w, d, h / floors * 0.35, h / floors, floors, glass), at(box(w * 0.5, 1, d * 0.5, '#8d93a0'), 0, h, 0));
 }
 
+/** Cheap clump of trees for the far land: crowns only, few faces. */
+function woods(a, b, cones) {
+  const g = group();
+  [[0, 0, 1], [2.6, 0.8, 0.8], [-2.4, 1.2, 0.9], [0.8, -2.4, 0.75], [-1.6, -2, 0.85], [3.2, -1.8, 0.65]].forEach(([x, z, k], i) => {
+    const c = i % 2 ? b : a;
+    g.add(cones ? at(cone(1.9 * k, 6.5 * k, c, 6), x, 0, z) : at(ico(2.5 * k, c), x, 2.5 * 1.25 * 0.85 * k, z, i * 1.3, [1, 1.25, 1]));
+  });
+  return g;
+}
+
 export const PROPS = {
+  // ---------- far scenery (seen from a distance: few faces, big shapes)
+  woods: { sway: 0.15, build: () => woods('#4fb35a', '#3f9e4d') },
+  woods_pine: { sway: 0.1, build: () => woods('#2f8f55', '#277a48', true) },
+  woods_snow: { sway: 0.1, build: () => woods('#ffffff', '#3a8a66', true) },
+  woods_maple: { sway: 0.15, build: () => woods('#e8502e', '#ff8a3d') },
+  woods_cherry: { sway: 0.15, build: () => woods('#ffb7d0', '#ffd0e0') },
+  woods_ginkgo: { sway: 0.15, build: () => woods('#ffd23f', '#ffc21a', true) },
+  hill: { build: () => group(at(dome(13, '#7fc95e', 10), 0, 0, 0, 0, [1.25, 0.5, 1]), at(dome(8, '#74bf55', 9), 9, 0, 3, 0, [1.2, 0.55, 1])), tints: ['#ffffff', '#e9f7d8', '#d6efc4', '#f4ffd9'] },
+  snowhill: { build: () => group(at(dome(13, '#ffffff', 10), 0, 0, 0, 0, [1.25, 0.5, 1]), at(dome(8, '#eef5fb', 9), 9, 0, 3, 0, [1.2, 0.55, 1])) },
+  block: { face: true, build: () => group(at(box(9, 22, 9, '#dfe6ee'), 0, 0, 0), at(box(9.2, 3, 7.4, '#6fb7e8'), 0, 4, 0), at(box(9.2, 3, 7.4, '#6fb7e8'), 0, 10, 0), at(box(9.2, 3, 7.4, '#6fb7e8'), 0, 16, 0), at(box(7.4, 3, 9.2, '#6fb7e8'), 0, 4, 0), at(box(7.4, 3, 9.2, '#6fb7e8'), 0, 10, 0), at(box(7.4, 3, 9.2, '#6fb7e8'), 0, 16, 0), at(box(4, 1.2, 4, '#8d93a0'), 0, 22, 0)),
+    tints: ['#ffffff', '#e8f1ff', '#fff3e0', '#e6ffe9', '#ffe6ea', '#d9e2ee'] },
   tree: { sway: 1, build: () => roundTree('#4fb35a', '#63c56b') },
   ginkgo: { sway: 1, build: () => group(at(cyl(0.2, 0.3, 3, TRUNK, 6), 0, 0, 0), at(cone(1.9, 4.6, '#ffd23f', 7), 0, 1.8, 0), blob(1.3, '#ffc21a', 0, 3.2, 0, [1, 1.2, 1])) },
   cherry: { sway: 1, build: () => roundTree('#ffb7d0', '#ffd0e0', 4.6) },
@@ -46,18 +69,18 @@ export const PROPS = {
     [[0, 0, 8.5], [0.7, 0.4, 7.4], [-0.6, 0.5, 9], [0.3, -0.7, 7.8], [-0.5, -0.5, 8.2]].forEach(([x, z, h], i) => {
       g.add(at(cyl(0.09, 0.12, h, i % 2 ? '#7cc45a' : '#69b54c', 5), x, 0, z));
       for (let k = 1; k < 4; k++) g.add(at(box(0.26, 0.05, 0.26, '#4f9a3c'), x, (h * k) / 4, z));
-      g.add(blob(0.7, '#5fb84a', x, h, z, [1.2, 0.7, 1.2]), blob(0.5, '#73c85c', x + 0.3, h - 1.2, z, [1.2, 0.6, 1.2]));
+      g.add(chip(0.7, '#5fb84a', x, h, z, [1.2, 0.7, 1.2]), chip(0.5, '#73c85c', x + 0.3, h - 1.2, z, [1.2, 0.6, 1.2]));
     });
     return g;
   } },
-  bush: { sway: 0.5, build: () => group(blob(0.8, '#4fb35a', 0, 0.55, 0), blob(0.6, '#63c56b', 0.6, 0.45, 0.2), blob(0.5, '#4fb35a', -0.55, 0.4, -0.1)) },
+  bush: { sway: 0.5, build: () => group(chip(0.8, '#4fb35a', 0, 0.55, 0), chip(0.6, '#63c56b', 0.6, 0.45, 0.2), chip(0.5, '#4fb35a', -0.55, 0.4, -0.1)) },
   grass: { sway: 2, build: () => group(...[0, 1, 2, 3, 4].map((i) => at(cone(0.12, 0.7 + (i % 3) * 0.2, i % 2 ? '#5fbe52' : '#49a843', 4), Math.cos(i * 2.2) * 0.35, 0, Math.sin(i * 2.2) * 0.35))) },
-  flowers: { sway: 1.5, build: () => group(blob(0.5, '#4fae4f', 0, 0.2, 0, [1.3, 0.6, 1.3]), ...['#ff7fa8', '#ffd23f', '#ffffff', '#ff8a3d', '#b08bff'].map((c, i) => blob(0.16, c, Math.cos(i * 1.3) * 0.45, 0.5 + (i % 2) * 0.12, Math.sin(i * 1.3) * 0.45))) },
-  canola: { sway: 1.5, build: () => group(blob(1.3, '#6fbf4a', 0, 0.3, 0, [1.4, 0.4, 1.4]), ...Array.from({ length: 9 }, (_, i) => blob(0.26, i % 3 ? '#ffe033' : '#ffd000', Math.cos(i * 0.7) * (0.5 + (i % 3) * 0.45), 0.62 + (i % 2) * 0.1, Math.sin(i * 0.7) * (0.5 + (i % 3) * 0.45)))) },
-  pebbles: { build: () => group(blob(0.28, '#b9b5aa', 0, 0.12, 0, [1.2, 0.6, 1]), blob(0.2, '#a39f94', 0.45, 0.09, 0.2, [1, 0.6, 1.2]), blob(0.16, '#c9c5ba', -0.3, 0.07, 0.35), blob(0.14, '#a39f94', 0.1, 0.06, -0.4)) },
-  snowpile: { build: () => group(blob(1.1, '#ffffff', 0, 0.4, 0, [1.3, 0.5, 1]), blob(0.7, '#eef5fb', 0.9, 0.25, 0.3, [1.2, 0.5, 1])) },
-  shell: { build: () => group(at(cone(0.22, 0.2, '#ffd9c9', 7), 0, 0, 0), at(cone(0.16, 0.14, '#fff3e6', 7), 0.4, 0, 0.25), blob(0.13, '#ff9f8a', -0.3, 0.07, 0.3, [1.4, 0.5, 1.4])) },
-  rock: { build: () => group(blob(0.9, '#a8a59c', 0, 0.45, 0, [1.2, 0.75, 1]), blob(0.5, '#96938b', 0.8, 0.28, 0.3, [1, 0.8, 1])) },
+  flowers: { sway: 1.5, build: () => group(chip(0.5, '#4fae4f', 0, 0.2, 0, [1.3, 0.6, 1.3]), ...['#ff7fa8', '#ffd23f', '#ffffff', '#ff8a3d', '#b08bff'].map((c, i) => chip(0.16, c, Math.cos(i * 1.3) * 0.45, 0.5 + (i % 2) * 0.12, Math.sin(i * 1.3) * 0.45))) },
+  canola: { sway: 1.5, build: () => group(chip(1.3, '#6fbf4a', 0, 0.3, 0, [1.4, 0.4, 1.4]), ...Array.from({ length: 9 }, (_, i) => chip(0.26, i % 3 ? '#ffe033' : '#ffd000', Math.cos(i * 0.7) * (0.5 + (i % 3) * 0.45), 0.62 + (i % 2) * 0.1, Math.sin(i * 0.7) * (0.5 + (i % 3) * 0.45)))) },
+  pebbles: { build: () => group(chip(0.28, '#b9b5aa', 0, 0.12, 0, [1.2, 0.6, 1]), chip(0.2, '#a39f94', 0.45, 0.09, 0.2, [1, 0.6, 1.2]), chip(0.16, '#c9c5ba', -0.3, 0.07, 0.35), chip(0.14, '#a39f94', 0.1, 0.06, -0.4)) },
+  snowpile: { build: () => group(chip(1.1, '#ffffff', 0, 0.4, 0, [1.3, 0.5, 1]), chip(0.7, '#eef5fb', 0.9, 0.25, 0.3, [1.2, 0.5, 1])) },
+  shell: { build: () => group(at(cone(0.22, 0.2, '#ffd9c9', 7), 0, 0, 0), at(cone(0.16, 0.14, '#fff3e6', 7), 0.4, 0, 0.25), chip(0.13, '#ff9f8a', -0.3, 0.07, 0.3, [1.4, 0.5, 1.4])) },
+  rock: { build: () => group(chip(0.9, '#a8a59c', 0, 0.45, 0, [1.2, 0.75, 1]), chip(0.5, '#96938b', 0.8, 0.28, 0.3, [1, 0.8, 1])) },
   mound: { build: () => at(dome(9, '#7fc95e', 14), 0, 0, 0, 0, [1, 0.62, 1]) },
   lamp: { build: () => group(at(cyl(0.07, 0.1, 4, '#5a6170', 6), 0, 0, 0), beam([0, 4, 0], [0.8, 4.3, 0], 0.05, '#5a6170'), at(box(0.5, 0.14, 0.3, '#fff3c4'), 0.8, 4.18, 0)), face: true },
   hydrant: { build: () => group(at(cyl(0.2, 0.24, 0.75, '#e23a2e', 8), 0, 0, 0), at(dome(0.2, '#e23a2e', 8), 0, 0.75, 0), at(box(0.62, 0.16, 0.16, '#c22d23'), 0, 0.45, 0)) },

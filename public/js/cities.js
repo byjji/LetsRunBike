@@ -1,6 +1,7 @@
 // Countries, cities and what appears in each city. Pure data: no drawing code here.
 // geo = [latitude, longitude] of the real city; pin = where its picture sits on the map, relative to that point.
 // thumb = optional picture-only model for the city card (otherwise the hero landmark is shown).
+// far / deep = what fills the land beyond the roadside (near band / distant band).
 // Prop names → three/props.js, landmark ids → three/landmarks/*, ambient kinds → three/ambient.js.
 
 export const COUNTRIES = [
@@ -16,9 +17,19 @@ const beside = (id, name, side, offset, h, features, extra = {}) => ({ id, name,
 const through = (id, name, span, features, extra = {}) => ({ id, name, side: 0, offset: 0, h: 0, through: true, span, features, ...extra });
 // small things scattered along every road so the ground never looks bare; chosen by the kind of ground
 const FILL = { land: ['grass', 'grass', 'flowers', 'pebbles'], snow: ['snowpile', 'snowpile', 'pebbles'], sand: ['pebbles', 'shell', 'grass'], water: ['pebbles', 'grass'] };
+// the land beyond the roadside: `far` fills 24–75 units out, `deep` (cheap, bigger shapes) 75–190 units out
+const HILL = { land: 'hill', sand: 'hill', snow: 'snowhill' };
+const scenery = (c, side) => {
+  const kind = c.sides[side < 0 ? 'left' : 'right'];
+  if (kind === 'water') return [];
+  return [
+    { n: c.far, p: 0.5, min: 24, max: 75, r: 6, side },
+    { n: [...c.deep, HILL[kind]], p: 0.55, min: 75, max: 190, r: 9, scale: 1.5, side },
+  ];
+};
 const city = (c) => ({
   lanes: 0, ...c,
-  roadside: [...c.roadside, ...[-1, 1].map((side) => ({ n: FILL[c.sides[side < 0 ? 'left' : 'right']], p: 0.3, min: 1.0, max: 15, side }))],
+  roadside: [...c.roadside, ...[-1, 1].map((side) => ({ n: FILL[c.sides[side < 0 ? 'left' : 'right']], p: 0.3, min: 1.0, max: 15, side })), ...scenery(c, -1), ...scenery(c, 1)],
   landmarks: c.landmarks.map((l, i) => ({ ...l, at: AT[i] })),
 });
 
@@ -42,6 +53,7 @@ export const CITIES = [
       through('seoul_hangangbridge', '한강 다리', 80, ['길 양옆으로 이어지는 아치 트러스', '회색 교각', '아래 파란 강물'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_namsan', bearing: 35, dist: 520 }, { id: 'bg_lottetower', bearing: -40, dist: 560 }],
+    far: ['office', 'apt', 'woods_ginkgo', 'woods', 'office', 'hanok'], deep: ['block', 'block', 'woods', 'block', 'woods_ginkgo'],
     roadside: [
       { n: ['ginkgo', 'ginkgo', 'tree'], p: 0.14, min: 2.2, max: 9 },
       { n: ['hanok', 'wall_kr'], p: 0.05, min: 9, max: 20 },
@@ -62,6 +74,7 @@ export const CITIES = [
       through('busan_gwanganbridge', '광안대교', 80, ['2층 트러스 상판', '주탑 2개', '늘어진 현수 케이블', '아래 바다'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_seahorizon', bearing: -70, dist: 500 }, { id: 'bg_hills', bearing: 60, dist: 520 }],
+    far: ['house_color', 'house_color', 'apt', 'woods', 'office'], deep: ['block', 'woods', 'woods', 'house_color'],
     roadside: [
       { n: ['palm'], p: 0.08, min: 2.2, max: 5, side: 1 },
       { n: ['parasol', 'parasol', 'rock'], p: 0.1, min: 2, max: 5.5, side: -1 },
@@ -78,10 +91,11 @@ export const CITIES = [
     landmarks: [
       through('suwon_janganmun', '장안문', 22, ['돌 육축에 무지개문 1개', '2층 기와 문루', '앞쪽 반원 옹성', '성벽 위 여장']),
       beside('suwon_gongsimdon', '서북공심돈', -1, 16, 22, ['성곽 위 3층 벽돌 망루', '벽에 뚫린 총안 구멍', '기와지붕', '양옆으로 이어지는 성곽과 여장']),
-      beside('suwon_hwahongmun', '화홍문', 1, 16, 14, ['무지개 수문 7개', '그 위 기와 누각', '아래로 흐르는 개울']),
-      beside('suwon_haenggung', '화성행궁', -1, 20, 14, ['낮고 넓은 기와 전각', '붉은 정문(신풍루) 2층 누각', '돌담', '앞마당 느티나무']),
+      beside('suwon_hwahongmun', '화홍문', 1, 32, 14, ['무지개 수문 7개', '그 위 기와 누각', '아래로 흐르는 개울']),
+      beside('suwon_haenggung', '화성행궁', -1, 25, 14, ['낮고 넓은 기와 전각', '붉은 정문(신풍루) 2층 누각', '돌담', '앞마당 느티나무']),
     ],
     backdrop: [{ id: 'bg_paldalsan', bearing: -30, dist: 480 }],
+    far: ['woods_pine', 'woods', 'hanok', 'woods', 'wall_kr'], deep: ['woods', 'woods_pine', 'woods'],
     roadside: [
       { n: ['pine', 'pine', 'tree'], p: 0.14, min: 2.4, max: 22 },
       { n: ['banner'], p: 0.07, min: 1.4, max: 2 },
@@ -95,12 +109,13 @@ export const CITIES = [
     sky: ['#49b6ff', '#e0f7ff'], fog: '#e0f7ff', ground: ['#9bd66f', '#92ce66'], road: ['#c6c2ba', '#bdb9b1'], edge: ['#ffffff', '#3aa0e8'],
     sides: { left: 'land', right: 'water' },
     landmarks: [
-      beside('ulsan_bamboo', '태화강 십리대숲', -1, 14, 16, ['빽빽한 대나무 숲', '마디 있는 녹색 줄기', '숲 사이 흙길', '낮은 대나무 울타리']),
+      beside('ulsan_bamboo', '태화강 십리대숲', -1, 19, 16, ['빽빽한 대나무 숲', '마디 있는 녹색 줄기', '숲 사이 흙길', '낮은 대나무 울타리']),
       beside('ulsan_bridge', '울산대교', 1, 50, 36, ['흰 주탑 2개', '주탑 사이를 한 번에 건너는 현수교', '가는 케이블', '아래 바다'], { wet: true }),
       beside('ulsan_daewangam', '대왕암', 1, 26, 12, ['누런 바위섬 무리', '바위를 잇는 출렁다리', '바위 위 소나무'], { wet: true }),
-      beside('ulsan_ganjeolgot', '간절곶 등대', 1, 14, 22, ['흰 등대', '기와지붕 모양 전망부', '옆에 큰 소망 우체통', '바닷가 언덕'], { wet: true }),
+      beside('ulsan_ganjeolgot', '간절곶 등대', 1, 19, 22, ['흰 등대', '기와지붕 모양 전망부', '옆에 큰 소망 우체통', '바닷가 언덕'], { wet: true }),
     ],
     backdrop: [{ id: 'bg_shipyard', bearing: 55, dist: 520 }, { id: 'bg_seahorizon', bearing: 80, dist: 500 }],
+    far: ['woods', 'woods_pine', 'woods', 'woods', 'apt'], deep: ['woods', 'woods_pine', 'block'],
     roadside: [
       { n: ['bamboo', 'bamboo', 'tree'], p: 0.2, min: 2.2, max: 24, side: -1 },
       { n: ['rock', 'pine'], p: 0.1, min: 2, max: 5.5, side: 1 },
@@ -114,12 +129,13 @@ export const CITIES = [
     sky: ['#6cc4ff', '#e6f6ff'], fog: '#e6f6ff', ground: ['#a2d86c', '#99d063'], road: ['#e3d2ac', '#dac9a2'], edge: ['#f8f0dc', '#b98a4e'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
-      beside('gyeongju_daereungwon', '대릉원', -1, 26, 16, ['둥글고 큰 잔디 고분 여러 개', '두 봉우리가 붙은 쌍분', '고분 사이 소나무']),
+      beside('gyeongju_daereungwon', '대릉원', -1, 46, 16, ['둥글고 큰 잔디 고분 여러 개', '두 봉우리가 붙은 쌍분', '고분 사이 소나무']),
       beside('gyeongju_cheomseongdae', '첨성대', 1, 12, 16, ['병 모양으로 휘어진 돌탑', '가운데 네모 창', '꼭대기 井자 돌', '네모난 기단']),
-      beside('gyeongju_wolji', '동궁과 월지', -1, 22, 12, ['연못가 기와 누각 3채', '돌 축대', '잔잔한 연못', '연못 속 작은 섬']),
+      beside('gyeongju_wolji', '동궁과 월지', -1, 38, 12, ['연못가 기와 누각 3채', '돌 축대', '잔잔한 연못', '연못 속 작은 섬']),
       beside('gyeongju_bulguksa', '불국사', 1, 22, 18, ['높은 돌 축대', '청운교·백운교 돌계단', '모양이 다른 두 탑(다보탑·석가탑)', '기와 문루']),
     ],
     backdrop: [{ id: 'bg_hills', bearing: -45, dist: 480 }, { id: 'bg_hills', bearing: 50, dist: 520 }],
+    far: ['mound', 'woods_pine', 'woods', 'hanok', 'woods'], deep: ['mound', 'woods', 'woods_pine'],
     roadside: [
       { n: ['canola', 'canola', 'flowers'], p: 0.22, min: 1.2, max: 14 },
       { n: ['pine', 'tree'], p: 0.08, min: 3, max: 26 },
@@ -141,6 +157,7 @@ export const CITIES = [
       beside('tokyo_skytree', '도쿄 스카이트리', -1, 36, 60, ['가늘고 긴 은백색 격자 탑', '위쪽 전망대 2단', '밑은 삼각, 위는 원', '꼭대기 안테나']),
     ],
     backdrop: [{ id: 'bg_skyline', bearing: 30, dist: 520 }, { id: 'bg_skyline', bearing: -50, dist: 560 }],
+    far: ['office', 'apt', 'shop_jp', 'woods_cherry', 'office', 'skyscraper'], deep: ['block', 'block', 'block', 'woods_cherry'],
     roadside: [
       { n: ['cherry', 'cherry', 'tree'], p: 0.14, min: 2.2, max: 9 },
       { n: ['shop_jp', 'machiya'], p: 0.08, min: 8, max: 18 },
@@ -157,9 +174,10 @@ export const CITIES = [
       through('kyoto_fushimiinari', '후시미 이나리 신사', 40, ['촘촘히 이어진 주홍 도리이', '검은 밑동', '위쪽 검은 가로대', '터널처럼 길을 덮음']),
       beside('kyoto_yasaka', '야사카의 탑', -1, 14, 30, ['5층 목탑', '층마다 넓은 처마', '어두운 나무색', '꼭대기 금속 상륜']),
       beside('kyoto_kiyomizu', '기요미즈데라', 1, 24, 22, ['절벽 위 나무 기둥 격자 무대', '크고 완만한 히와다 지붕', '붉은 3층탑이 옆에', '아래 단풍 숲']),
-      beside('kyoto_kinkakuji', '금각사', -1, 22, 16, ['연못 위 3층 누각', '위 2층이 금색', '지붕 꼭대기 금 봉황', '1층은 흰 벽과 나무']),
+      beside('kyoto_kinkakuji', '금각사', -1, 29, 16, ['연못 위 3층 누각', '위 2층이 금색', '지붕 꼭대기 금 봉황', '1층은 흰 벽과 나무']),
     ],
     backdrop: [{ id: 'bg_maplehills', bearing: -40, dist: 460 }, { id: 'bg_maplehills', bearing: 45, dist: 500 }],
+    far: ['woods_maple', 'woods_pine', 'machiya', 'woods_maple', 'woods'], deep: ['woods_maple', 'woods_pine', 'woods'],
     roadside: [
       { n: ['maple', 'maple', 'bamboo', 'pine'], p: 0.2, min: 2.2, max: 24 },
       { n: ['stonelantern'], p: 0.06, min: 1.4, max: 2.4 },
@@ -179,6 +197,7 @@ export const CITIES = [
       beside('osaka_ferriswheel', '덴포잔 대관람차', 1, 30, 40, ['아주 큰 원형 바퀴', '색색 곤돌라', '흰 바큇살', '삼각 받침 다리']),
     ],
     backdrop: [{ id: 'bg_skyline', bearing: 40, dist: 540 }],
+    far: ['office', 'apt', 'shop_jp', 'woods', 'skyscraper'], deep: ['block', 'block', 'block', 'woods'],
     roadside: [
       { n: ['shop_jp', 'shop_jp', 'machiya'], p: 0.1, min: 8, max: 18 },
       { n: ['office', 'apt'], p: 0.07, min: 20, max: 60 },
@@ -198,6 +217,7 @@ export const CITIES = [
       beside('sapporo_skijump', '오쿠라야마 스키점프대', 1, 40, 36, ['산비탈의 길고 흰 점프대', '아래 넓은 착지 경사', '꼭대기 출발 탑', '양옆 침엽수']),
     ],
     backdrop: [{ id: 'bg_snowmountain', bearing: 35, dist: 480 }, { id: 'bg_snowmountain', bearing: -50, dist: 520 }],
+    far: ['woods_snow', 'woods_snow', 'house_snow', 'woods_snow', 'woods_snow'], deep: ['woods_snow', 'woods_snow', 'snowhill'],
     roadside: [
       { n: ['birch', 'pine_snow', 'pine_snow'], p: 0.18, min: 2.4, max: 26 },
       { n: ['snowman'], p: 0.05, min: 1.6, max: 5 },
@@ -211,12 +231,13 @@ export const CITIES = [
     sky: ['#52b7ff', '#e6f7ff'], fog: '#e6f7ff', ground: ['#8fcf63', '#86c75a'], road: ['#cfc8b8', '#c6bfae'], edge: ['#ffffff', '#3d9b4f'],
     sides: { left: 'land', right: 'water' },
     landmarks: [
-      beside('shizuoka_teafield', '녹차밭', -1, 20, 12, ['둥근 이랑이 줄지은 차밭', '완만한 언덕', '짙은 녹색 줄무늬', '바람개비 달린 기둥']),
-      beside('shizuoka_miho', '미호노마쓰바라', 1, 12, 12, ['검은 모래 해변', '구불구불 굽은 소나무 숲', '바다 물결'], { wet: true }),
-      beside('shizuoka_sunpu', '슨푸성', -1, 20, 16, ['해자와 돌 축대', '흰 벽의 2층 망루', '회색 기와', '나무 다리와 문']),
+      beside('shizuoka_teafield', '녹차밭', -1, 23, 12, ['둥근 이랑이 줄지은 차밭', '완만한 언덕', '짙은 녹색 줄무늬', '바람개비 달린 기둥']),
+      beside('shizuoka_miho', '미호노마쓰바라', 1, 24, 12, ['검은 모래 해변', '구불구불 굽은 소나무 숲', '바다 물결'], { wet: true }),
+      beside('shizuoka_sunpu', '슨푸성', -1, 25, 16, ['해자와 돌 축대', '흰 벽의 2층 망루', '회색 기와', '나무 다리와 문']),
       through('shizuoka_shinkansen', '신칸센 고가', 6, ['길 위를 가로지르는 콘크리트 고가', '굵은 교각', '위로 지나가는 흰·파란 신칸센']),
     ],
     backdrop: [{ id: 'bg_fuji', bearing: -12, dist: 520 }],
+    far: ['tearow', 'woods', 'woods_pine', 'machiya', 'tearow'], deep: ['woods', 'woods_pine', 'woods'],
     roadside: [
       { n: ['tearow', 'tearow', 'tree'], p: 0.2, min: 2.4, max: 26, side: -1 },
       { n: ['pine', 'rock'], p: 0.12, min: 2.2, max: 5.5, side: 1 },
@@ -232,12 +253,13 @@ export const CITIES = [
     sky: ['#57b6ff', '#e0f2ff'], fog: '#e0f2ff', ground: ['#9fcf82', '#96c779'], road: ['#9fa3ad', '#969aa5'], edge: ['#ffffff', '#ffd23f'],
     sides: { left: 'land', right: 'land' }, lanes: 1,
     landmarks: [
-      beside('newyork_liberty', '자유의 여신상', 1, 30, 40, ['청록색 여신', '별 모양 기단 위 돌 받침대', '뿔 7개 왕관', '치켜든 금색 횃불과 왼팔의 판']),
+      beside('newyork_liberty', '자유의 여신상', 1, 40, 40, ['청록색 여신', '별 모양 기단 위 돌 받침대', '뿔 7개 왕관', '치켜든 금색 횃불과 왼팔의 판']),
       through('newyork_brooklynbridge', '브루클린 브리지', 80, ['돌 주탑 2개', '주탑마다 뾰족 아치 2개', '부채꼴로 퍼진 케이블', '아래 강물'], { bridge: true }),
       beside('newyork_empirestate', '엠파이어 스테이트 빌딩', -1, 26, 56, ['단계적으로 좁아지는 석조 탑', '세로 줄 창', '꼭대기 둥근 첨탑과 안테나']),
       beside('newyork_timessquare', '타임스스퀘어', 1, 16, 26, ['색 전광판이 붙은 건물들(글자·로고 없음)', '모서리가 뾰족한 삼각 건물', '붉은 계단', '앞쪽 가로수']),
     ],
     backdrop: [{ id: 'bg_manhattan', bearing: -35, dist: 540 }, { id: 'bg_manhattan', bearing: 45, dist: 580 }],
+    far: ['skyscraper', 'office', 'brownstone', 'skyscraper', 'woods'], deep: ['block', 'block', 'block', 'woods'],
     roadside: [
       { n: ['brownstone', 'brownstone'], p: 0.09, min: 8, max: 16 },
       { n: ['skyscraper', 'office'], p: 0.08, min: 20, max: 60 },
@@ -257,6 +279,7 @@ export const CITIES = [
       through('sanfrancisco_goldengate', '금문교', 80, ['인터내셔널 오렌지색', '주탑 2개에 가로대 4단', '늘어진 주 케이블과 세로 줄', '아래 바다'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_alcatraz', bearing: 50, dist: 420 }, { id: 'bg_hills', bearing: -50, dist: 520 }],
+    far: ['victorian', 'woods', 'cypress', 'house_color', 'office'], deep: ['woods', 'block', 'woods_pine', 'house_color'],
     roadside: [
       { n: ['victorian', 'victorian'], p: 0.08, min: 8, max: 20, side: -1 },
       { n: ['tree', 'cypress'], p: 0.14, min: 2.2, max: 24, side: -1 },

@@ -20,20 +20,21 @@ function instanced(world, model, count, material) {
 
 // ------------------------------------------------------------------ wind & clouds
 function wind(world) {
-  const clouds = [];
-  for (let i = 0; i < 9; i++) {
-    const s = 9 + hash(i) * 9;
-    const c = bake(group(at(sphere(s, '#ffffff', 8), 0, 0, 0), at(sphere(s * 0.8, '#ffffff', 8), s * 1.1, -s * 0.15, 0), at(sphere(s * 0.7, '#ffffff', 8), -s * 1.1, -s * 0.2, 0), at(sphere(s * 0.75, '#ffffff', 8), s * 0.3, s * 0.5, 0)));
-    c.scale.y = 0.6;
-    world.scene.add(c); clouds.push(c);
-  }
+  const N = 22, s = 10;
+  const puff = group(at(sphere(s, '#ffffff', 8), 0, 0, 0), at(sphere(s * 0.8, '#ffffff', 8), s * 1.1, -s * 0.15, 0), at(sphere(s * 0.7, '#ffffff', 8), -s * 1.1, -s * 0.2, 0), at(sphere(s * 0.75, '#ffffff', 8), s * 0.3, s * 0.5, 0), at(sphere(s * 0.5, '#ffffff', 8), s * 1.9, -s * 0.3, 0));
+  const cm = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, fog: false });
+  world.ownMats.push(cm);
+  const im = instanced(world, puff, N, cm);
   return {
     update(camS, t) {
       world.wind = Math.min(1, Math.max(0.1, 0.45 + 0.3 * Math.sin(t * 0.23) + 0.2 * Math.sin(t * 0.61 + 1)));
-      clouds.forEach((c, i) => {
-        const a = (i / clouds.length) * Math.PI * 2 + t * 0.004, r = 260 + hash(i + 20) * 260;
-        c.position.set(world.cam.x + Math.sin(a) * r, 95 + hash(i + 40) * 70, world.cam.z + Math.cos(a) * r);
-      });
+      for (let i = 0; i < N; i++) {
+        const a = (i / N) * Math.PI * 2 + hash(i + 5) * 0.2 + t * 0.004, r = 240 + hash(i + 20) * 420, k = 0.7 + hash(i) * 1.5;
+        _d.position.set(world.cam.x + Math.sin(a) * r, 80 + hash(i + 40) * 120, world.cam.z + Math.cos(a) * r);
+        _d.rotation.set(0, a + Math.PI, 0); _d.scale.set(k, k * 0.55, k); _d.updateMatrix();
+        im.setMatrixAt(i, _d.matrix);
+      }
+      im.instanceMatrix.needsUpdate = true;
     },
   };
 }
