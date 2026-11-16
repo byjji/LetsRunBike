@@ -7,6 +7,8 @@ const { WebSocketServer } = require('ws');
 
 const PORT = process.env.PORT || 3000;
 const ROOT = path.join(__dirname, 'public');
+const VENDOR = '/vendor/three/';
+const THREE_ROOT = path.join(__dirname, 'node_modules', 'three');
 const MAX_PLAYERS = 6;
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -16,6 +18,7 @@ const MIME = {
   '.png': 'image/png',
   '.svg': 'image/svg+xml',
   '.ico': 'image/x-icon',
+  '.glb': 'model/gltf-binary',
 };
 
 const server = http.createServer((req, res) => {
@@ -27,8 +30,18 @@ const server = http.createServer((req, res) => {
     return;
   }
   if (p === '/') p = '/index.html';
-  const file = path.normalize(path.join(ROOT, p));
-  if (!file.startsWith(ROOT + path.sep)) {
+  // three.js is served from node_modules so the app works without internet
+  let root = ROOT;
+  if (p.startsWith(VENDOR)) {
+    p = p.slice(VENDOR.length - 1);
+    root = THREE_ROOT;
+    if (!p.startsWith('/build/') && !p.startsWith('/examples/jsm/')) {
+      res.writeHead(403).end();
+      return;
+    }
+  }
+  const file = path.normalize(path.join(root, p));
+  if (!file.startsWith(root + path.sep)) {
     res.writeHead(403).end();
     return;
   }
