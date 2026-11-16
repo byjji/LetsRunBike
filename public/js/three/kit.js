@@ -62,7 +62,7 @@ export function group(...children) { const g = new THREE.Group(); for (const c o
 export function live(g, name) { g.userData.live = true; if (name) g.name = name; return g; }
 
 const _c = new THREE.Color(), _m = new THREE.Matrix4();
-function bakeNode(node) {
+function bakeNode(node, shade) {
   node.updateMatrixWorld(true);
   const inv = new THREE.Matrix4().copy(node.matrixWorld).invert();
   const geos = [], kept = [], lives = [];
@@ -90,6 +90,17 @@ function bakeNode(node) {
   if (geos.length) {
     const g = mergeGeometries(geos, false);
     for (const x of geos) x.dispose();
+    if (shade) {
+      // darken toward the base so shapes read as solid instead of flat
+      const pos = g.attributes.position, col = g.attributes.color;
+      let y0 = Infinity, y1 = -Infinity;
+      for (let i = 0; i < pos.count; i++) { const y = pos.getY(i); if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      const span = Math.max(1e-6, (y1 - y0) * 0.45);
+      for (let i = 0; i < pos.count; i++) {
+        const u = Math.min(1, (pos.getY(i) - y0) / span), f = 0.74 + 0.26 * u * u * (3 - 2 * u);
+        col.setXYZ(i, col.getX(i) * f, col.getY(i) * f, col.getZ(i) * f);
+      }
+    }
     out.add(new THREE.Mesh(g, VCOL));
   }
   for (const k of kept) {
@@ -101,17 +112,17 @@ function bakeNode(node) {
   }
   for (const l of lives) {
     const rel = new THREE.Matrix4().multiplyMatrices(inv, l.matrixWorld);
-    const b = bakeNode(l);
+    const b = bakeNode(l, shade);
     rel.decompose(b.position, b.quaternion, b.scale);
     out.add(b);
   }
   return out;
 }
 /** Bake a model into one vertex-coloured mesh (plus special-material meshes and `live` sub-groups). */
-export function bake(root) {
+export function bake(root, { shade = true } = {}) {
   const p = root.position.clone(), q = root.quaternion.clone(), s = root.scale.clone();
   root.position.set(0, 0, 0); root.quaternion.identity(); root.scale.set(1, 1, 1);
-  const out = bakeNode(root);
+  const out = bakeNode(root, shade);
   out.position.copy(p); out.quaternion.copy(q); out.scale.copy(s);
   return out;
 }
