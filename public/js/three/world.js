@@ -159,7 +159,7 @@ export class World {
     const { city, layout, scene } = this;
     // distant scenery: stays at a fixed bearing around the camera
     this.far = new THREE.Group(); scene.add(this.far);
-    this.spinners = []; this.shuttles = [];
+    this.spinners = []; this.shuttles = []; this.screens = [];
     for (const b of city.backdrop) {
       if (!LANDMARKS[b.id]) continue;
       const g = bake(LANDMARKS[b.id]()), a = (b.bearing * Math.PI) / 180;
@@ -173,7 +173,7 @@ export class World {
       let g = this.place(buildLandmark(m.def, m.span), m.s, m.lateral, turn);
       scene.add(g);
       // moving parts of a landmark: wheels that turn, trains that run back and forth
-      g.traverse((o) => { if (o.userData.spin) this.spinners.push(o); if (o.userData.shuttle) this.shuttles.push(o); });
+      g.traverse((o) => { if (o.userData.spin) this.spinners.push(o); if (o.userData.shuttle) this.shuttles.push(o); if (o.userData.screen != null) this.screens.push(o); });
       if (m.def.model) {
         loadLandmark(m.def, { span: m.span }).then((obj) => {
           if (this.disposed) { disposeTree(obj); return; }
@@ -280,6 +280,8 @@ export class World {
     this.base.position.x = this.cam.x; this.base.position.z = this.cam.z;
     this.far.position.set(this.cam.x, 0, this.cam.z);
     for (const o of this.spinners) o.rotation.z = t * o.userData.spin;
+    // colour screens drift slowly through hues (a full turn takes over half a minute: no flashing)
+    for (const o of this.screens) { o.material.color.setHSL((o.userData.screen + t * 0.03) % 1, 0.75, 0.62); o.material.emissive.copy(o.material.color); }
     for (const o of this.shuttles) { const k = o.userData.shuttle; o.position.x = ((t * k.speed) % k.range) - k.range / 2; }
     for (const p of this.parts) p.update(camS, t, dt);
   }

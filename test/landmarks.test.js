@@ -4,8 +4,7 @@ import * as THREE from 'three';
 import { LANDMARKS, loadLandmark, clearance } from '../public/js/three/landmarks/index.js';
 import { CITIES } from '../public/js/cities.js';
 
-const DONE = ['seoul', 'busan', 'suwon', 'ulsan', 'gyeongju', 'tokyo', 'kyoto', 'osaka', 'sapporo', 'shizuoka']; // later tasks add cities here
-for (const c of CITIES.filter((c) => DONE.includes(c.id))) {
+for (const c of CITIES) {
   for (const l of c.landmarks) test(`명소: ${l.id}`, async () => {
     assert.equal(typeof LANDMARKS[l.id], 'function');
     const g = await loadLandmark(l), box = new THREE.Box3().setFromObject(g);
