@@ -54,7 +54,15 @@ export function layoutCity(city, track, lengthUnits, seed) {
       if (Math.abs(s - track.start) < 2.5 || Math.abs(s - track.finish) < 2.5) { if (dist < RW + 3) continue; }
       const lateral = side * dist;
       if (besides.some((m) => Math.hypot(s - m.s, lateral - m.lateral) < keepOut(m.def))) continue;
-      props.push({ n, s, lateral, rot, scale });
+      // footprint: far-off rules are buildings, near ones are trees and small things
+      const rad = rule.min >= 20 ? 9 : rule.min >= 8 ? 5.5 : rule.min >= 2 ? 1.6 : 0.6;
+      let clash = false;
+      for (let k = props.length - 1; k >= 0 && s - props[k].s < 20; k--) {
+        const q = props[k];
+        if (Math.hypot(s - q.s, lateral - q.lateral) < rad + q.r) { clash = true; break; }
+      }
+      if (clash) continue;
+      props.push({ n, s, lateral, rot, scale, r: rad });
     }
   }
 

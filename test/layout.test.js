@@ -32,3 +32,12 @@ test('물 쪽에는 땅 소품이 없다', () => {
   assert.ok(L.props.length > 20);
   for (const p of L.props) if (p.lateral < 0) assert.ok(-p.lateral <= RW + 6, '바다 위 소품');
 });
+for (const id of ['seoul', 'newyork', 'kyoto']) test(`소품끼리 겹치지 않는다: ${id}`, () => {
+  const c = CITIES.find((x) => x.id === id), t = buildTrack(c, 400, 2.3, 5), L = layoutCity(c, t, 920, 5);
+  assert.ok(L.props.length > 100);
+  for (let i = 0; i < L.props.length; i++) for (let j = i + 1; j < L.props.length; j++) {
+    const a = L.props[i], b = L.props[j];
+    if (b.s - a.s > 30) break;
+    assert.ok(Math.hypot(a.s - b.s, a.lateral - b.lateral) >= a.r + b.r - 1e-6, `${a.n} / ${b.n}`);
+  }
+});

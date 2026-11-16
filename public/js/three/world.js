@@ -5,6 +5,7 @@ import { buildPath, sample, RW } from '../path.js';
 import { layoutCity } from '../layout.js';
 import { mat, box, cyl, sphere, at, group, bake, disposeTree, WATER, WATER_Y } from './kit.js';
 import { buildRider, buildStar } from './riders.js';
+import { PROPS } from './props.js';
 
 const SHORE = RW + 6;
 const FONT = '"Jua", "Malgun Gothic", sans-serif';
@@ -27,6 +28,7 @@ export class World {
     this.#sky();
     this.#ground();
     this.#gates();
+    this.#props();
   }
 
   /** Put an object on the ground at distance s along the road, `lateral` to the right; local +z = travel direction. */
@@ -146,6 +148,66 @@ export class World {
       label.position.set(0, 1.8, -0.07); label.rotation.y = Math.PI;
       post.add(label);
       scene.add(this.place(post, sg.s, -(RW + 1.5)));
+    }
+  }
+
+  /** Material whose instances bend in the wind: displacement grows with height squared. */
+  swayMaterial(sway) {
+    const m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+    if (sway > 0) {
+      const world = this;
+      m.onBeforeCompile = (sh) => {
+        sh.uniforms.uTime = this.time;
+        sh.uniforms.uWind = { get value() { return world.wind; } };
+        sh.uniforms.uSway = { value: sway };
+        sh.vertexShader = 'uniform float uTime; uniform float uWind; uniform float uSway;\n' + sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+          #ifdef USE_INSTANCING
+            float swH = max(0.0, transformed.y);
+            float swP = uTime * 1.7 + instanceMatrix[3].x * 0.35 + instanceMatrix[3].z * 0.27;
+            float swA = uSway * (0.25 + uWind) * swH * swH * 0.012;
+            transformed.x += (sin(swP) + 0.5 * sin(swP * 2.3 + 1.0)) * swA;
+            transformed.z += cos(swP * 0.8) * swA * 0.6;
+          #endif`);
+      };
+      m.customProgramCacheKey = () => 'sway';
+    }
+    this.ownMats.push(m);
+    return m;
+  }
+
+  #props() {
+    const { layout, scene } = this;
+    const CHUNK = 120, buckets = new Map();
+    for (const p of layout.props) {
+      if (!PROPS[p.n]) continue;
+      const key = p.n + '|' + Math.floor(p.s / CHUNK);
+      let b = buckets.get(key); if (!b) buckets.set(key, b = []);
+      b.push(p);
+    }
+    const protos = new Map(), dummy = new THREE.Object3D(), tint = new THREE.Color();
+    for (const [key, list] of buckets) {
+      const n = key.split('|')[0], def = PROPS[n];
+      let pr = protos.get(n);
+      if (!pr) {
+        const baked = bake(def.build());
+        pr = { geo: baked.children[0].geometry, mat: this.swayMaterial(def.sway || 0), tints: (def.tints || []).map((c) => new THREE.Color(c)) };
+        protos.set(n, pr);
+      }
+      const im = new THREE.InstancedMesh(pr.geo, pr.mat, list.length);
+      list.forEach((p, i) => {
+        sample(this.path, p.s, p.lateral, _p);
+        dummy.position.set(_p.x, 0, _p.z);
+        dummy.rotation.y = def.face ? _p.yaw + (p.lateral > 0 ? 1 : -1) * (Math.PI / 2 + 0.25) : p.rot;
+        dummy.scale.setScalar(def.face ? 0.92 + (p.scale - 0.85) * 0.45 : p.scale);
+        dummy.updateMatrix();
+        im.setMatrixAt(i, dummy.matrix);
+        const k = Math.floor(p.rot * 1000);
+        if (pr.tints.length) tint.copy(pr.tints[k % pr.tints.length]); else tint.setScalar(0.9 + ((k % 7) / 7) * 0.16);
+        im.setColorAt(i, tint);
+      });
+      im.instanceMatrix.needsUpdate = true;
+      im.computeBoundingSphere();
+      scene.add(im);
     }
   }
 
