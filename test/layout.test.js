@@ -41,3 +41,8 @@ for (const id of ['seoul', 'newyork', 'kyoto']) test(`소품끼리 겹치지 않
     assert.ok(Math.hypot(a.s - b.s, a.lateral - b.lateral) >= a.r + b.r - 1e-6, `${a.n} / ${b.n}`);
   }
 });
+for (const c of CITIES) test(`탈것 길에는 소품이 없다: ${c.id}`, () => {
+  const t = buildTrack(c, 400, 2.3, 5), L = layoutCity(c, t, 920, 5);
+  const lanes = c.ambient.filter((a) => a.type === 'mover' && !a.onlyThrough).map((a) => a.lateral);
+  for (const p of L.props) for (const l of lanes) assert.ok(Math.abs(p.lateral - l) >= 2.6 + p.r - 1e-6, `${p.n} @${p.lateral} lane ${l}`);
+});

@@ -177,7 +177,7 @@ export const CITIES = [
       { n: ['tree', 'cherry'], p: 0.12, min: 2.2, max: 8 },
       { n: ['lamp'], p: 0.04, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('pigeon'), mover('subway', 16, 24, 13, { elevated: true }), mover('taxi', -6.5, 9, 9), particles('petal')],
+    ambient: [WIND, CROWD, birds('pigeon'), mover('subway', 16, 24, 13, { elevated: true }), mover('taxi', -8.5, 9, 9), particles('petal')],
   }),
   city({
     id: 'sapporo', country: 'jp', name: '삿포로', tune: 2, hero: 'sapporo_clocktower',
@@ -196,7 +196,7 @@ export const CITIES = [
       { n: ['house_snow'], p: 0.06, min: 9, max: 22 },
       { n: ['lamp'], p: 0.04, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('magpie'), particles('snow'), mover('tram', -7, 8, 12), floater('skijumper')],
+    ambient: [WIND, CROWD, birds('magpie'), particles('snow'), mover('tram', -8.5, 8, 12), floater('skijumper')],
   }),
   city({
     id: 'shizuoka', country: 'jp', name: '시즈오카', tune: 1, hero: 'shizuoka_teafield',
@@ -236,7 +236,7 @@ export const CITIES = [
       { n: ['tree'], p: 0.12, min: 2.2, max: 7 },
       { n: ['hydrant', 'lamp'], p: 0.05, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('pigeon'), mover('taxi', -6.5, 10, 6), mover('ferry', 34, 5, 30, { onlyThrough: 'newyork_brooklynbridge' }), particles('leaf')],
+    ambient: [WIND, CROWD, birds('pigeon'), mover('taxi', -8.5, 10, 6), mover('ferry', 34, 5, 30, { onlyThrough: 'newyork_brooklynbridge' }), particles('leaf')],
   }),
   city({
     id: 'sanfrancisco', country: 'us', name: '샌프란시스코', tune: 1, hero: 'sanfrancisco_goldengate',
@@ -255,7 +255,7 @@ export const CITIES = [
       { n: ['rock', 'grass'], p: 0.1, min: 2, max: 5.5, side: 1 },
       { n: ['lamp', 'hydrant'], p: 0.04, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('gull'), mover('cablecar', -6.5, 7, 10), floater('sealion', { lateral: 9 }), mover('boat', 60, 5, 24), floater('waves')],
+    ambient: [WIND, CROWD, birds('gull'), mover('cablecar', -8.5, 7, 10), floater('sealion', { lateral: 9 }), mover('boat', 60, 5, 24), floater('waves')],
   }),
 ];
 

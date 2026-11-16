@@ -39,7 +39,8 @@ export function layoutCity(city, track, lengthUnits, seed) {
   const inThrough = (s, pad) => throughs.some((m) => Math.abs(s - m.s) <= m.span / 2 + pad);
   const isWater = (side) => city.sides[side < 0 ? 'left' : 'right'] === 'water';
 
-  // roadside props
+  // roadside props (kept off the lanes that trains, trams and boats travel along)
+  const lanes = city.ambient.filter((a) => a.type === 'mover' && !a.onlyThrough).map((a) => a.lateral);
   const props = [];
   for (let i = 0; i < total; i++) {
     for (const rule of city.roadside) {
@@ -56,6 +57,7 @@ export function layoutCity(city, track, lengthUnits, seed) {
       if (besides.some((m) => Math.hypot(s - m.s, lateral - m.lateral) < keepOut(m.def))) continue;
       // footprint: far-off rules are buildings, near ones are trees and small things
       const rad = rule.min >= 20 ? 9 : rule.min >= 8 ? 5.5 : rule.min >= 2 ? 1.6 : 0.6;
+      if (lanes.some((l) => Math.abs(lateral - l) < 2.6 + rad)) continue;
       let clash = false;
       for (let k = props.length - 1; k >= 0 && s - props[k].s < 20; k--) {
         const q = props[k];

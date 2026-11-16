@@ -6,6 +6,7 @@ import { layoutCity } from '../layout.js';
 import { mat, box, cyl, sphere, at, group, bake, disposeTree, WATER, WATER_Y } from './kit.js';
 import { buildRider, buildStar } from './riders.js';
 import { PROPS } from './props.js';
+import { AMBIENT } from './ambient.js';
 
 const SHORE = RW + 6;
 const FONT = '"Jua", "Malgun Gothic", sans-serif';
@@ -29,6 +30,7 @@ export class World {
     this.#ground();
     this.#gates();
     this.#props();
+    for (const a of city.ambient) this.parts.push(AMBIENT[a.type](this, a));
   }
 
   /** Put an object on the ground at distance s along the road, `lateral` to the right; local +z = travel direction. */
