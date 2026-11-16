@@ -65,25 +65,29 @@
 
   <!-- 코스/NPC 선택 (혼자 · 방장 · 손님 공용) -->
   <section id="s-setup" class="screen">
-    <div class="panel wide">
+    <div class="panel setup">
       <header><button class="btn small back" data-back>← 뒤로</button><h2 id="setup-title">어디로 달릴까?</h2></header>
-      <div id="roombox" class="roombox" hidden>
-        <div class="roomcode">방 번호 <b id="room-code"></b><small id="room-url"></small></div>
-        <div id="room-players" class="players"></div>
-      </div>
-      <div id="setup-body">
-        <h3>나라</h3>
-        <div id="countries" class="chips countries"></div>
-        <h3>도시 <small id="city-name"></small></h3>
-        <div id="courses" class="citymap"></div>
-        <div class="cols three">
+      <div id="setup-body" class="setup-grid">
+        <!-- left: country tabs and the big map -->
+        <div class="setup-map">
+          <div id="countries" class="chips countries"></div>
+          <div class="mapbox"><div id="courses" class="citymap"></div></div>
+        </div>
+        <!-- right: friends, speed, distance, start -->
+        <div class="setup-side">
+          <div id="roombox" class="roombox" hidden>
+            <div class="roomcode">방 번호 <b id="room-code"></b><small id="room-url"></small></div>
+            <div id="room-players" class="players"></div>
+          </div>
+          <div class="where">달릴 곳 <b id="city-name"></b></div>
           <div><h3>같이 달릴 동물 친구</h3><div id="npcs" class="chips"></div></div>
           <div><h3>동물 친구 빠르기</h3><div id="diffs" class="chips"></div></div>
           <div><h3>거리</h3><div id="lens" class="chips"></div></div>
+          <div class="grow"></div>
+          <button id="btn-start" class="btn primary big">출발!</button>
+          <p id="wait-msg" class="wait" hidden>방장 친구가 출발을 누르면 시작해요!</p>
         </div>
       </div>
-      <button id="btn-start" class="btn primary big">출발!</button>
-      <p id="wait-msg" class="wait" hidden>방장 친구가 출발을 누르면 시작해요!</p>
     </div>
   </section>
 

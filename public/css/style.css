@@ -7,7 +7,8 @@
   --font: "Jua", "Malgun Gothic", "Apple SD Gothic Neo", sans-serif;
 }
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-html { font-size: clamp(13px, 2.3vmin, 30px); }
+/* 1rem follows the smaller of the window's height and width, so every screen keeps its proportions and stays inside the monitor */
+html { font-size: clamp(7px, min(2.3vh, 1.29vw), 30px); }
 html, body { margin: 0; height: 100%; overflow: hidden; background: #6ccbff; font-family: var(--font); color: var(--ink); user-select: none; }
 [hidden] { display: none !important; }
 #game, #fx { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
@@ -15,11 +16,22 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6ccbff; fon
 .countries .chip { font-size: 1.15em; }
 
 /* ---------- screens ---------- */
-.screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; padding: 1rem; background: rgba(40, 30, 80, .18); }
+.screen { position: fixed; inset: 0; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 1.2rem; padding: 1rem; background: rgba(40, 30, 80, .18); overflow: hidden; }
 .screen.on { display: flex; }
 .screen.dim { background: rgba(40, 30, 80, .5); }
-.panel { background: var(--panel); border-radius: 1.6rem; padding: 1.3rem 1.6rem; box-shadow: 0 .5rem 0 rgba(0, 0, 0, .15); max-width: 94vw; max-height: 94vh; overflow-y: auto; display: flex; flex-direction: column; gap: .7rem; align-items: center; min-width: 26rem; }
+.panel { background: var(--panel); border-radius: 1.6rem; padding: 1.3rem 1.6rem; box-shadow: 0 .5rem 0 rgba(0, 0, 0, .15); max-width: 100%; max-height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: .7rem; align-items: center; min-width: min(26rem, 100%); }
 .panel.wide { width: 62rem; align-items: stretch; }
+/* setup: big map on the left, choices and start on the right */
+.panel.setup { width: 100%; max-width: 76rem; height: 100%; align-items: stretch; overflow: hidden; }
+.setup-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.2rem; }
+.setup-map { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: .6rem; }
+.mapbox { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; border-radius: 1.2rem; overflow: hidden; background: linear-gradient(#bfe6ff, #8fd0f7); }
+.setup-side { min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .7rem; background: #fff3dc; border-radius: 1.2rem; padding: .9rem 1rem; }
+.setup-side .grow { flex: 1; }
+.setup-side .btn.big { align-self: stretch; margin: 0 0 .35rem; }
+.setup-side .roombox { flex-direction: column; align-items: stretch; gap: .5rem; }
+.where { font-size: 1.05rem; display: flex; align-items: baseline; gap: .6rem; }
+.where b { font-weight: normal; font-size: 2rem; color: var(--orange-d); line-height: 1.1; }
 .panel header { display: flex; align-items: center; gap: 1rem; align-self: stretch; }
 .panel header h2 { flex: 1; text-align: center; margin-right: 5rem; }
 h1, h2, h3, p { margin: 0; font-weight: normal; }
@@ -47,7 +59,6 @@ h3 { font-size: 1.05rem; opacity: .7; margin: .3rem 0 .35rem; }
 .btn.primary.small { box-shadow: 0 .25rem 0 var(--orange-d); }
 .btn:disabled { opacity: .5; }
 .corner { position: fixed; right: 1rem; bottom: 1rem; display: flex; gap: .6rem; }
-#btn-start { align-self: center; margin-top: .4rem; }
 
 /* ---------- home ---------- */
 .me-card { font: inherit; color: var(--ink); background: var(--panel); border: 0; border-radius: 1.6rem; padding: .8rem 2rem; display: flex; flex-direction: column; align-items: center; cursor: pointer; box-shadow: 0 .45rem 0 rgba(0, 0, 0, .15); }
@@ -61,7 +72,7 @@ h3 { font-size: 1.05rem; opacity: .7; margin: .3rem 0 .35rem; }
 .card img { width: 5rem; height: 5rem; object-fit: contain; }
 .card.sel { border-color: var(--orange); background: #fff1dc; transform: scale(1.05); }
 /* country map with city pictures at their real places */
-.citymap { position: relative; margin: 0 auto; width: min(100%, calc(min(42vh, 23rem) * var(--ratio, 1.4))); aspect-ratio: var(--ratio, 1.4); border-radius: 1.2rem; overflow: hidden; background: linear-gradient(#bfe6ff, #8fd0f7); flex-shrink: 0; }
+.citymap { position: relative; width: min(100%, calc(62vh * var(--ratio, 1.4))); width: min(100cqw, calc(100cqh * var(--ratio, 1.4))); aspect-ratio: var(--ratio, 1.4); flex-shrink: 0; }
 .citymap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .citymap .land { fill: #a8dc8a; stroke: #6fb85a; stroke-width: .8; stroke-linejoin: round; }
 .citymap .lead { stroke: #3b3054; stroke-width: .5; stroke-dasharray: 1.2 1; opacity: .55; }
@@ -75,7 +86,6 @@ h3 { font-size: 1.05rem; opacity: .7; margin: .3rem 0 .35rem; }
 .pin:focus-visible img { outline: .3rem solid var(--yellow); }
 .locked .pin { pointer-events: none; }
 .locked .pin:not(.sel) { opacity: .45; }
-#city-name { color: var(--orange-d); font-size: 1em; margin-left: .4rem; }
 .chips { display: flex; gap: .45rem; flex-wrap: wrap; }
 .chip { font: inherit; font-size: 1.15rem; color: var(--ink); background: #fff; border: .2rem solid transparent; border-radius: .9rem; padding: .3rem .8rem; cursor: pointer; min-width: 2.6rem; }
 .chip.sel { background: var(--orange); color: #fff; }
@@ -150,7 +160,11 @@ input:focus { border-color: var(--orange); }
 @keyframes big { 0% { opacity: 0; transform: scale(.3); } 20% { opacity: 1; transform: scale(1.15); } 35% { transform: scale(1); } 80% { opacity: 1; } 100% { opacity: 0; transform: scale(1.1); } }
 
 @media (max-aspect-ratio: 1/1) {
-  .courses { grid-template-columns: repeat(3, 1fr); }
+  html { font-size: clamp(9px, 2.3vmin, 30px); }
+  .panel.setup { overflow-y: auto; }
+  .setup-grid { display: flex; flex-direction: column; flex: none; }
+  .mapbox { flex: none; height: 46vh; }
+  .setup-side { overflow: visible; }
   .cols, .cols.three { grid-template-columns: 1fr; }
   .logo { font-size: 3rem; }
   #distinfo { left: 1rem; bottom: 9.5rem; }
