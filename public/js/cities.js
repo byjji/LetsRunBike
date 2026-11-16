@@ -68,7 +68,7 @@ export const CITIES = [
     sky: ['#62c0ff', '#e2f5ff'], fog: '#e2f5ff', ground: ['#8fd067', '#86c85e'], road: ['#d8c9a8', '#cfc09e'], edge: ['#f6efe0', '#a8703f'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
-      through('suwon_janganmun', '장안문', 6, ['돌 육축에 무지개문 1개', '2층 기와 문루', '앞쪽 반원 옹성', '성벽 위 여장']),
+      through('suwon_janganmun', '장안문', 22, ['돌 육축에 무지개문 1개', '2층 기와 문루', '앞쪽 반원 옹성', '성벽 위 여장']),
       beside('suwon_gongsimdon', '서북공심돈', -1, 16, 22, ['성곽 위 3층 벽돌 망루', '벽에 뚫린 총안 구멍', '기와지붕', '양옆으로 이어지는 성곽과 여장']),
       beside('suwon_hwahongmun', '화홍문', 1, 16, 14, ['무지개 수문 7개', '그 위 기와 누각', '아래로 흐르는 개울']),
       beside('suwon_haenggung', '화성행궁', -1, 20, 14, ['낮고 넓은 기와 전각', '붉은 정문(신풍루) 2층 누각', '돌담', '앞마당 느티나무']),
@@ -88,9 +88,9 @@ export const CITIES = [
     sides: { left: 'land', right: 'water' },
     landmarks: [
       beside('ulsan_bamboo', '태화강 십리대숲', -1, 14, 16, ['빽빽한 대나무 숲', '마디 있는 녹색 줄기', '숲 사이 흙길', '낮은 대나무 울타리']),
-      beside('ulsan_bridge', '울산대교', 1, 50, 36, ['흰 주탑 2개', '주탑 사이를 한 번에 건너는 현수교', '가는 케이블', '아래 바다']),
-      beside('ulsan_daewangam', '대왕암', 1, 26, 12, ['누런 바위섬 무리', '바위를 잇는 출렁다리', '바위 위 소나무']),
-      beside('ulsan_ganjeolgot', '간절곶 등대', 1, 14, 22, ['흰 등대', '기와지붕 모양 전망부', '옆에 큰 소망 우체통', '바닷가 언덕']),
+      beside('ulsan_bridge', '울산대교', 1, 50, 36, ['흰 주탑 2개', '주탑 사이를 한 번에 건너는 현수교', '가는 케이블', '아래 바다'], { wet: true }),
+      beside('ulsan_daewangam', '대왕암', 1, 26, 12, ['누런 바위섬 무리', '바위를 잇는 출렁다리', '바위 위 소나무'], { wet: true }),
+      beside('ulsan_ganjeolgot', '간절곶 등대', 1, 14, 22, ['흰 등대', '기와지붕 모양 전망부', '옆에 큰 소망 우체통', '바닷가 언덕'], { wet: true }),
     ],
     backdrop: [{ id: 'bg_shipyard', bearing: 55, dist: 520 }, { id: 'bg_seahorizon', bearing: 80, dist: 500 }],
     roadside: [
@@ -204,7 +204,7 @@ export const CITIES = [
     sides: { left: 'land', right: 'water' },
     landmarks: [
       beside('shizuoka_teafield', '녹차밭', -1, 20, 12, ['둥근 이랑이 줄지은 차밭', '완만한 언덕', '짙은 녹색 줄무늬', '바람개비 달린 기둥']),
-      beside('shizuoka_miho', '미호노마쓰바라', 1, 12, 12, ['검은 모래 해변', '구불구불 굽은 소나무 숲', '바다 물결']),
+      beside('shizuoka_miho', '미호노마쓰바라', 1, 12, 12, ['검은 모래 해변', '구불구불 굽은 소나무 숲', '바다 물결'], { wet: true }),
       beside('shizuoka_sunpu', '슨푸성', -1, 20, 16, ['해자와 돌 축대', '흰 벽의 2층 망루', '회색 기와', '나무 다리와 문']),
       through('shizuoka_shinkansen', '신칸센 고가', 6, ['길 위를 가로지르는 콘크리트 고가', '굵은 교각', '위로 지나가는 흰·파란 신칸센']),
     ],

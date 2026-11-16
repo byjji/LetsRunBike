@@ -80,16 +80,17 @@ export function parapet(w, color, y, z, h = 0.9, step = 1.6) {
  * Bridge the road runs over (road along z, centred on x = 0): deck, railings, piers, river and its banks.
  * The deck top sits just under y = 0 because the road ribbon is drawn on top of it.
  */
-export function bridgeBase(S, { deckW = 11, deck = '#a7adb8', rail = '#e3e6ec', pier = '#b5bac4', piers = null, water = '#3aa7ea', bank = '#9a8a66', waterY = -3 } = {}) {
+export function bridgeBase(S, { deckW = 11, deck = '#a7adb8', rail = '#e3e6ec', pier = '#b5bac4', piers = null, water = '#3aa7ea', bank = '#9a8a66', bankX = [-350, 350], waterY = -3 } = {}) {
   const g = group(
     at(box(deckW, 1, S + 0.6, deck), 0, -1.06, 0),
     at(box(0.3, 1.0, S, rail), -(deckW / 2 - 0.3), 0, 0), at(box(0.3, 1.0, S, rail), deckW / 2 - 0.3, 0, 0),
   );
   const n = piers ?? Math.max(1, Math.round(S / 26) - 1);
   for (let i = 1; i <= n; i++) g.add(at(box(deckW * 0.8, 3.2, 2.2, pier), 0, waterY - 1, -S / 2 + (S * i) / (n + 1)));
-  if (water) {
-    const w = at(box(700, 0.2, S, water), 0, waterY - 0.2, 0);
-    g.add(w, at(box(700, 4.2, 1.6, bank), 0, waterY - 1.2, -S / 2 - 0.8), at(box(700, 4.2, 1.6, bank), 0, waterY - 1.2, S / 2 + 0.8));
+  if (water) g.add(at(box(700, 0.2, S, water), 0, waterY - 0.2, 0));
+  if (bankX) {
+    const bw = bankX[1] - bankX[0], bx = (bankX[0] + bankX[1]) / 2;
+    g.add(at(box(bw, 4.2, 1.6, bank), bx, waterY - 1.2, -S / 2 - 0.8), at(box(bw, 4.2, 1.6, bank), bx, waterY - 1.2, S / 2 + 0.8));
   }
   return g;
 }
@@ -114,4 +115,32 @@ export function suspension(S, x, towersZ, towerH, color, { deckY = 1, sag = 0.82
     if (yAt(list[i]) - deckY > 0.8 && !tz.includes(list[i])) out.push(beam([x, deckY, list[i]], [x, yAt(list[i]), list[i]], r * 0.4, color, 4));
   }
   return out;
+}
+
+/** Bridge tower: two legs joined by cross bars. halfW = leg centre from the middle, bars = heights of the cross bars. */
+export function towerFrame(H, halfW, legW, legD, color, bars, { y0 = -6, barH = 1.2, taper = 0 } = {}) {
+  const g = group();
+  for (const s of [-1, 1]) {
+    const leg = at(box(legW, H - y0, legD, color), s * halfW, y0, 0);
+    if (taper) leg.rotation.z = s * taper;
+    g.add(leg);
+  }
+  for (const y of bars) g.add(at(box(halfW * 2 + legW * 0.6, barH, legD * 0.8, color), 0, y, 0));
+  return g;
+}
+
+/**
+ * Whole suspension bridge seen from the side (for landmarks standing beside the road).
+ * Runs along x, centred on the origin; deck top at deckY; towers at x = +-towerX.
+ */
+export function suspensionSpan(L, { towerX, towerH, deckY = 8, deckW = 7, color = '#f4f6f8', deck = '#aab1bd', bars = null, doubleDeck = false, y0 = -6 } = {}) {
+  const inner = group(at(box(deckW, 1, L, deck), 0, deckY - 1, 0));
+  if (doubleDeck) {
+    inner.add(at(box(deckW, 0.8, L, deck), 0, deckY - 4.6, 0));
+    for (const sx of [-1, 1]) for (let z = -L / 2; z < L / 2 - 1; z += 6) inner.add(beam([sx * deckW / 2, deckY - 3.8, z], [sx * deckW / 2, deckY - 1, z + 3], 0.14, color, 4), beam([sx * deckW / 2, deckY - 1, z + 3], [sx * deckW / 2, deckY - 3.8, z + 6], 0.14, color, 4));
+  }
+  for (const z of [-towerX, towerX]) inner.add(at(towerFrame(towerH, deckW / 2 + 0.7, 1.3, 1.8, color, bars || [deckY + (towerH - deckY) * 0.45, towerH - 1.2], { y0 }), 0, 0, z));
+  for (const sx of [-1, 1]) inner.add(...suspension(L, sx * (deckW / 2 + 0.7), [-towerX, towerX], towerH, color, { deckY, step: L / 30 }));
+  inner.rotation.y = Math.PI / 2;
+  return group(inner);
 }

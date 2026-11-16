@@ -5,8 +5,9 @@ import * as THREE from 'three';
 import { RW } from '../../path.js';
 import { bake } from '../kit.js';
 import { KR } from './kr.js';
+import { KR2 } from './kr2.js';
 
-export const LANDMARKS = { ...KR };
+export const LANDMARKS = { ...KR, ...KR2 };
 
 /** Coded landmark, baked. Beside-the-road landmarks are scaled so their top is at def.h. */
 export function buildLandmark(def, span = def.span) {
