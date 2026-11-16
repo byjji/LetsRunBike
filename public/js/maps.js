@@ -31,7 +31,7 @@ const OUTLINES = {
 };
 
 export const PIN_R = 15;        // radius of a city picture on the map, in map units (the land is 100 units tall)
-const PAD = { kr: [46, 16], jp: [34, 16], us: [22, 20] };   // sea margin [x, y] so pictures fit beside the land
+const PAD = { kr: [46, 24], jp: [34, 24], us: [22, 24] };   // sea margin [x, y] so pictures fit beside the land
 
 /**
  * Map of one country in drawing units: { w, h, polys: [[x, y]…][], pos(lat, lon) → [x, y], pin(city) → [x, y] }.

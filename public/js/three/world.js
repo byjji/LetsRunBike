@@ -12,6 +12,7 @@ import { LANDMARKS, buildLandmark, loadLandmark } from './landmarks/index.js';
 const SHORE = RW + 6;
 const FONT = '"Jua", "Malgun Gothic", sans-serif';
 const _p = {};
+const c2w = new THREE.Color(0xffffff);
 
 export class World {
   /** city: cities.js entry. track: from game.js buildTrack (carries units, seed, lengthM). */
@@ -53,8 +54,8 @@ export class World {
     this.textures.push(tex);
     scene.background = tex;
     scene.fog = new THREE.Fog(city.fog, 140, 900);
-    scene.add(new THREE.HemisphereLight(0xffffff, new THREE.Color(city.ground[0]).lerp(new THREE.Color(0xffffff), 0.65), 1.9));
-    const sun = new THREE.DirectionalLight(0xfff4e0, 1.7);
+    scene.add(new THREE.HemisphereLight(0xeaf6ff, new THREE.Color(city.ground[0]).lerp(new THREE.Color(0xffffff), 0.55), 1.75));
+    const sun = new THREE.DirectionalLight(0xfff1d6, 2.1);
     sun.position.set(-0.6, 1, -0.35);
     scene.add(sun);
   }
@@ -79,6 +80,7 @@ export class World {
       for (let k = 0; k < 6; k++) col.push(c.r, c.g, c.b);
     };
     const n = path.n, ec = city.edge, FAR = 8;
+    const curb = '#' + new THREE.Color(city.road[0]).lerp(new THREE.Color(0xffffff), 0.55).getHexString();
     for (let i = 0; i < n; i++) {
       const alt = Math.floor(i / 3) & 1, bridge = onBridge(i), seg = track.segs[i];
       quad(i, i + 1, -RW, RW, city.road[alt]);
@@ -86,7 +88,8 @@ export class World {
         const water = city.sides[side < 0 ? 'left' : 'right'] === 'water';
         quad(i, i + 1, side * RW, side * (RW + 0.4), ec[Math.floor(i / 2) % ec.length]);
         if (bridge) continue;
-        quad(i, i + 1, side * (RW + 0.4), side * (water ? SHORE : 60), city.ground[alt]);
+        quad(i, i + 1, side * (RW + 0.4), side * (RW + 1.0), curb);
+        quad(i, i + 1, side * (RW + 1.0), side * (water ? SHORE : 60), city.ground[alt]);
         if (water) quad(i, i + 1, side * SHORE, side * (SHORE + 1.5), '#e9d7a0', 0, WATER_Y - 0.5);
         else if (i % FAR === 0) {
           let j = Math.min(n, i + FAR);
@@ -112,6 +115,36 @@ export class World {
     this.ownMats.push(m);
     const ribbon = new THREE.Mesh(g, m); ribbon.frustumCulled = false;
     scene.add(ribbon);
+
+    // irregular lighter / darker patches so the ground is not one flat colour
+    const pv = [0, 0, 0];
+    for (let k = 0; k < 9; k++) { const a = (k / 9) * Math.PI * 2, r = 0.75 + 0.25 * Math.sin(k * 2.7); pv.push(Math.cos(a) * r, 0, Math.sin(a) * r); }
+    const pi = []; for (let k = 1; k <= 9; k++) pi.push(0, k === 9 ? 1 : k + 1, k);
+    const pg = new THREE.BufferGeometry();
+    pg.setAttribute('position', new THREE.Float32BufferAttribute(pv, 3));
+    pg.setAttribute('normal', new THREE.Float32BufferAttribute(pv.map((_, k) => (k % 3 === 1 ? 1 : 0)), 3));
+    pg.setIndex(pi);
+    const spots = [];
+    const hash = (v) => { const x = Math.sin(v * 91.7 + track.seed * 0.013) * 43758.5453; return x - Math.floor(x); };
+    for (let i = 2; i < n - 2; i += 2) for (const side of [-1, 1]) {
+      if (hash(i * 2 + side) > 0.55 || onBridge(i)) continue;
+      const water = city.sides[side < 0 ? 'left' : 'right'] === 'water';
+      const size = 2.5 + hash(i * 3.1 + side) * 6, lat = RW + 1.6 + size + hash(i * 5.3 + side) * (water ? 0 : 46);
+      if (water && lat + size > SHORE) continue;
+      spots.push({ s: i + hash(i * 7.7), lat: side * lat, size, tone: hash(i * 11.3 + side) });
+    }
+    if (spots.length) {
+      const pm = new THREE.MeshLambertMaterial({ color: 0xffffff }); this.ownMats.push(pm);
+      const im = new THREE.InstancedMesh(pg, pm, spots.length), d = new THREE.Object3D(), base = new THREE.Color(city.ground[0]), c = new THREE.Color();
+      spots.forEach((sp, k) => {
+        sample(path, sp.s, sp.lat, _p);
+        d.position.set(_p.x, 0.012, _p.z); d.rotation.y = sp.tone * 6.28; d.scale.set(sp.size * (0.8 + sp.tone * 0.6), 1, sp.size); d.updateMatrix();
+        im.setMatrixAt(k, d.matrix);
+        im.setColorAt(k, sp.tone > 0.5 ? c.copy(base).lerp(c2w, 0.16 + sp.tone * 0.1) : c.copy(base).multiplyScalar(0.86 + sp.tone * 0.12));
+      });
+      im.frustumCulled = false;
+      scene.add(im);
+    }
   }
 
   /** Flat panel with text (gate banners, distance signs). */
@@ -160,6 +193,30 @@ export class World {
     // distant scenery: stays at a fixed bearing around the camera
     this.far = new THREE.Group(); scene.add(this.far);
     this.spinners = []; this.shuttles = []; this.screens = [];
+    // sun with a soft glow
+    const sunMat = new THREE.MeshBasicMaterial({ color: 0xfff3b8, fog: false }), glowMat = new THREE.MeshBasicMaterial({ color: 0xfff6d0, fog: false, transparent: true, opacity: 0.28, depthWrite: false });
+    this.ownMats.push(sunMat, glowMat);
+    for (const [r, m, d] of [[95, glowMat, 1210], [46, sunMat, 1200]]) {
+      const disc = new THREE.Mesh(new THREE.CircleGeometry(r, 28), m);
+      disc.position.set(d * 0.52, 430, d * 0.72); disc.lookAt(0, 0, 0);
+      this.far.add(disc);
+    }
+    // low hills all round the horizon (not out at sea), tinted toward the sky for depth
+    const hillCol = '#' + new THREE.Color(city.ground[0]).lerp(new THREE.Color(city.fog), 0.5).getHexString(), hills = new THREE.Group();
+    const hh = (v) => { const x = Math.sin(v * 37.3 + 1.7) * 43758.5453; return x - Math.floor(x); };
+    for (let i = 0; i < 20; i++) {
+      const a = (i / 20) * Math.PI * 2 + 0.13, side = Math.sin(a) > 0 ? 'right' : 'left';
+      if (city.sides[side] === 'water' && Math.abs(Math.sin(a)) > 0.25) continue;
+      const d = 800 + hh(i) * 140, r = 110 + hh(i + 30) * 90, h = 28 + hh(i + 60) * 58;
+      const m = sphere(r, hillCol, 9); m.scale.set(1.5, h / r, 0.5);
+      m.position.set(-Math.sin(a) * d, 0, Math.cos(a) * d); m.rotation.y = Math.atan2(Math.sin(a), -Math.cos(a));
+      hills.add(m);
+    }
+    if (hills.children.length) {
+      const hb = bake(hills, { shade: false }), hm = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, fog: false });
+      this.ownMats.push(hm); hb.children[0].material = hm;
+      this.far.add(hb);
+    }
     for (const b of city.backdrop) {
       if (!LANDMARKS[b.id]) continue;
       const g = bake(LANDMARKS[b.id]()), a = (b.bearing * Math.PI) / 180;
@@ -170,7 +227,15 @@ export class World {
     for (const m of layout.landmarks) {
       if (!LANDMARKS[m.def.id]) continue;
       const turn = m.def.through ? 0 : Math.sign(m.lateral) * (Math.PI / 2 + 0.3);   // front toward the road and the oncoming rider
-      let g = this.place(buildLandmark(m.def, m.span), m.s, m.lateral, turn);
+      let g = buildLandmark(m.def, m.span);
+      if (!m.def.through && !m.def.wet) {
+        const bb = new THREE.Box3().setFromObject(g), pad = new THREE.Mesh(this.shadowGeo(), this.shadowMat());
+        pad.scale.set((bb.max.x - bb.min.x) * 0.56, 1, (bb.max.z - bb.min.z) * 0.56);
+        pad.position.set((bb.max.x + bb.min.x) / 2, 0.025, (bb.max.z + bb.min.z) / 2); pad.renderOrder = 1;
+        const holder = new THREE.Group(); holder.add(pad);
+        scene.add(this.place(holder, m.s, m.lateral, turn));
+      }
+      g = this.place(g, m.s, m.lateral, turn);
       scene.add(g);
       // moving parts of a landmark: wheels that turn, trains that run back and forth
       g.traverse((o) => { if (o.userData.spin) this.spinners.push(o); if (o.userData.shuttle) this.shuttles.push(o); if (o.userData.screen != null) this.screens.push(o); });
@@ -218,12 +283,16 @@ export class World {
       b.push(p);
     }
     const protos = new Map(), dummy = new THREE.Object3D(), tint = new THREE.Color();
+    const shadows = new Map();       // chunk → [{ x, z, rot, sx, sz }]
     for (const [key, list] of buckets) {
       const n = key.split('|')[0], def = PROPS[n];
       let pr = protos.get(n);
       if (!pr) {
         const baked = bake(def.build());
         pr = { geo: baked.children[0].geometry, mat: this.swayMaterial(def.sway || 0), tints: (def.tints || []).map((c) => new THREE.Color(c)) };
+        pr.geo.computeBoundingBox();
+        const bb = pr.geo.boundingBox; pr.hx = Math.max(bb.max.x, -bb.min.x); pr.hz = Math.max(bb.max.z, -bb.min.z);
+        if (!def.face) pr.hx = pr.hz = Math.min(Math.max(pr.hx, pr.hz), 2.0);   // trees: shadow of the crown, kept modest
         protos.set(n, pr);
       }
       const im = new THREE.InstancedMesh(pr.geo, pr.mat, list.length);
@@ -234,6 +303,9 @@ export class World {
         dummy.scale.setScalar(def.face ? 0.92 + (p.scale - 0.85) * 0.45 : p.scale);
         dummy.updateMatrix();
         im.setMatrixAt(i, dummy.matrix);
+        const ck = key.split('|')[1]; let sh = shadows.get(ck); if (!sh) shadows.set(ck, sh = []);
+        const room = Math.max(0.3, (Math.abs(p.lateral) - RW - 0.6) / 1.6);    // never spill onto the road
+        sh.push({ x: _p.x, z: _p.z, rot: dummy.rotation.y, sx: Math.min(room, pr.hx * dummy.scale.x), sz: Math.min(room, pr.hz * dummy.scale.x) });
         const k = Math.floor(p.rot * 1000);
         if (pr.tints.length) tint.copy(pr.tints[k % pr.tints.length]); else tint.setScalar(0.9 + ((k % 7) / 7) * 0.16);
         im.setColorAt(i, tint);
@@ -242,6 +314,22 @@ export class World {
       im.computeBoundingSphere();
       scene.add(im);
     }
+    // soft dark pads under everything, so things sit on the ground instead of floating
+    for (const list of shadows.values()) {
+      const im = new THREE.InstancedMesh(this.shadowGeo(), this.shadowMat(), list.length);
+      list.forEach((s, i) => {
+        dummy.position.set(s.x - 0.35 * s.sx, 0.03, s.z + 0.3 * s.sz); dummy.rotation.y = s.rot; dummy.scale.set(s.sx * 1.2, 1, s.sz * 1.2); dummy.updateMatrix();
+        im.setMatrixAt(i, dummy.matrix);
+      });
+      im.computeBoundingSphere(); im.renderOrder = 1;
+      scene.add(im);
+    }
+  }
+
+  shadowGeo() { return this._sg || (this._sg = new THREE.CircleGeometry(1, 18).rotateX(-Math.PI / 2)); }
+  shadowMat() {
+    if (!this._sm) { this._sm = new THREE.MeshBasicMaterial({ color: 0x1a2a3a, transparent: true, opacity: 0.16, depthWrite: false }); this.ownMats.push(this._sm); }
+    return this._sm;
   }
 
   /** items: from Race.scene(): riders { kind:'rider', id, z, x, ch, phase, lean, speed, name, me } and stars { kind:'star', z, x }. */

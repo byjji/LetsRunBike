@@ -17,7 +17,7 @@ npm start
 
 ## 기능
 
-- **나라 → 도시 선택**
+- **나라 → 도시 선택**: 나라를 고르면 실제 지도 윤곽이 나오고, 도시가 실제 위치에 대표 명소 그림으로 표시됨
   - 한국: 서울 · 부산 · 수원 · 울산 · 경주
   - 일본: 도쿄 · 교토 · 오사카 · 삿포로 · 시즈오카
   - 미국: 뉴욕 · 샌프란시스코
@@ -48,6 +48,7 @@ window.setBikeSpeed(5.2); // km/h
 | `public/js/game.js` | 트랙 생성, 주행/NPC/순위 로직 |
 | `public/js/cities.js` | 나라·도시 데이터: 색, 명소, 길가 소품, 움직이는 것 |
 | `public/js/path.js` | 굽은 길의 3D 중심선 계산 |
+| `public/js/maps.js` | 나라 지도 윤곽과 도시 위치 계산 |
 | `public/js/layout.js` | 명소·소품·응원 인파 배치 (같은 방 친구끼리 동일) |
 | `public/js/render.js` | 후방 쿼터뷰 3D 렌더러, 이름표, 도시 카드 그림 |
 | `public/js/three/world.js` | 도시 한 곳의 3D 장면 조립 |

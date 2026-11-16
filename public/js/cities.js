@@ -14,7 +14,13 @@ const AT = [0.2, 0.4, 0.6, 0.85];
 const beside = (id, name, side, offset, h, features, extra = {}) => ({ id, name, side, offset, h, through: false, span: 0, features, ...extra });
 // landmark the road passes through / over
 const through = (id, name, span, features, extra = {}) => ({ id, name, side: 0, offset: 0, h: 0, through: true, span, features, ...extra });
-const city = (c) => ({ lanes: 0, ...c, landmarks: c.landmarks.map((l, i) => ({ ...l, at: AT[i] })) });
+// small things scattered along every road so the ground never looks bare; chosen by the kind of ground
+const FILL = { land: ['grass', 'grass', 'flowers', 'pebbles'], snow: ['snowpile', 'snowpile', 'pebbles'], sand: ['pebbles', 'shell', 'grass'], water: ['pebbles', 'grass'] };
+const city = (c) => ({
+  lanes: 0, ...c,
+  roadside: [...c.roadside, ...[-1, 1].map((side) => ({ n: FILL[c.sides[side < 0 ? 'left' : 'right']], p: 0.3, min: 1.0, max: 15, side }))],
+  landmarks: c.landmarks.map((l, i) => ({ ...l, at: AT[i] })),
+});
 
 const WIND = { type: 'wind' }, CROWD = { type: 'crowd' };
 const birds = (kind) => ({ type: 'birds', kind });
