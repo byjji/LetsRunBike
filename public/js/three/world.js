@@ -159,6 +159,7 @@ export class World {
     const { city, layout, scene } = this;
     // distant scenery: stays at a fixed bearing around the camera
     this.far = new THREE.Group(); scene.add(this.far);
+    this.spinners = []; this.shuttles = [];
     for (const b of city.backdrop) {
       if (!LANDMARKS[b.id]) continue;
       const g = bake(LANDMARKS[b.id]()), a = (b.bearing * Math.PI) / 180;
@@ -171,6 +172,8 @@ export class World {
       const turn = m.def.through ? 0 : Math.sign(m.lateral) * (Math.PI / 2 + 0.3);   // front toward the road and the oncoming rider
       let g = this.place(buildLandmark(m.def, m.span), m.s, m.lateral, turn);
       scene.add(g);
+      // moving parts of a landmark: wheels that turn, trains that run back and forth
+      g.traverse((o) => { if (o.userData.spin) this.spinners.push(o); if (o.userData.shuttle) this.shuttles.push(o); });
       if (m.def.model) {
         loadLandmark(m.def, { span: m.span }).then((obj) => {
           if (this.disposed) { disposeTree(obj); return; }
@@ -276,6 +279,8 @@ export class World {
     sample(this.path, camS, 0, this.cam);
     this.base.position.x = this.cam.x; this.base.position.z = this.cam.z;
     this.far.position.set(this.cam.x, 0, this.cam.z);
+    for (const o of this.spinners) o.rotation.z = t * o.userData.spin;
+    for (const o of this.shuttles) { const k = o.userData.shuttle; o.position.x = ((t * k.speed) % k.range) - k.range / 2; }
     for (const p of this.parts) p.update(camS, t, dt);
   }
 

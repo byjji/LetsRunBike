@@ -129,7 +129,7 @@ export const CITIES = [
     landmarks: [
       through('tokyo_kaminarimon', '가미나리몬', 6, ['붉은 기둥의 문', '가운데 매달린 큰 붉은 등', '회색 기와지붕', '양옆 칸막이 방']),
       beside('tokyo_tower', '도쿄타워', -1, 26, 46, ['붉은색·흰색 띠', '아래로 벌어진 4다리 격자', '2단 전망대', '꼭대기 안테나']),
-      beside('tokyo_rainbowbridge', '레인보우브리지', 1, 60, 28, ['흰 주탑 2개', '2층 상판 현수교', '늘어진 케이블', '아래 바다']),
+      beside('tokyo_rainbowbridge', '레인보우브리지', -1, 52, 30, ['흰 주탑 2개', '2층 상판 현수교', '늘어진 케이블', '아래 바다']),
       beside('tokyo_skytree', '도쿄 스카이트리', -1, 36, 60, ['가늘고 긴 은백색 격자 탑', '위쪽 전망대 2단', '밑은 삼각, 위는 원', '꼭대기 안테나']),
     ],
     backdrop: [{ id: 'bg_skyline', bearing: 30, dist: 520 }, { id: 'bg_skyline', bearing: -50, dist: 560 }],
@@ -139,7 +139,7 @@ export const CITIES = [
       { n: ['office', 'office', 'apt'], p: 0.08, min: 20, max: 60 },
       { n: ['lamp'], p: 0.04, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('pigeon'), particles('petal'), mover('shinkansen', 18, 45, 12, { elevated: true }), mover('subway', -15, 24, 17, { elevated: true })],
+    ambient: [WIND, CROWD, birds('pigeon'), particles('petal'), mover('shinkansen', 18, 45, 12, { elevated: true }), mover('taxi', -8.5, 9, 8)],
   }),
   city({
     id: 'kyoto', country: 'jp', name: '교토', tune: 0, hero: 'kyoto_kinkakuji',
@@ -177,7 +177,7 @@ export const CITIES = [
       { n: ['tree', 'cherry'], p: 0.12, min: 2.2, max: 8 },
       { n: ['lamp'], p: 0.04, min: 1.4, max: 1.8 },
     ],
-    ambient: [WIND, CROWD, birds('pigeon'), mover('subway', 16, 24, 13, { elevated: true }), mover('taxi', -8.5, 9, 9), particles('petal')],
+    ambient: [WIND, CROWD, birds('pigeon'), mover('subway', -62, 24, 13, { elevated: true }), mover('taxi', -8.5, 9, 9), particles('petal')],
   }),
   city({
     id: 'sapporo', country: 'jp', name: '삿포로', tune: 2, hero: 'sapporo_clocktower',
@@ -215,7 +215,7 @@ export const CITIES = [
       { n: ['machiya'], p: 0.03, min: 10, max: 24, side: -1 },
       { n: ['grass', 'flowers'], p: 0.1, min: 1.2, max: 5 },
     ],
-    ambient: [WIND, CROWD, birds('kite'), BUTTERFLIES, mover('shinkansen', -34, 48, 11, { elevated: true }), mover('boat', 50, 5, 22), floater('waves')],
+    ambient: [WIND, CROWD, birds('kite'), BUTTERFLIES, mover('shinkansen', -72, 48, 11, { elevated: true }), mover('boat', 50, 5, 22), floater('waves')],
   }),
 
   // ------------------------------------------------------------------ 미국
