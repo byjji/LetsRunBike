@@ -26,10 +26,19 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #6ccbff; fon
 .setup-grid { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 1.2rem; }
 .setup-map { min-width: 0; min-height: 0; display: flex; flex-direction: column; gap: .6rem; }
 .mapbox { flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; border-radius: 1.2rem; overflow: hidden; background: linear-gradient(#bfe6ff, #8fd0f7); }
-.setup-side { min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .7rem; background: #fff3dc; border-radius: 1.2rem; padding: .9rem 1rem; }
+.setup-side { min-width: 0; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: .55rem; background: #fff3dc; border-radius: 1.2rem; padding: .9rem 1rem; }
 .setup-side .grow { flex: 1; }
-.setup-side .btn.big { align-self: stretch; margin: 0 0 .35rem; }
-.setup-side .roombox { flex-direction: column; align-items: stretch; gap: .5rem; }
+.setup-side .btn.big { align-self: stretch; margin: 0 0 .35rem; flex-shrink: 0; position: sticky; bottom: .35rem; font-size: 2rem; padding: .7rem 1rem; }
+.setup-side > * { flex-shrink: 0; }
+.setup-side h3 { margin: 0 0 .25rem; }
+/* room box inside the narrow column: code on the left, players on the right, kept small so 출발 always fits */
+.setup-side .roombox { gap: .8rem; padding: .45rem .8rem; }
+.setup-side .roomcode { font-size: .95rem; }
+.setup-side .roomcode b { font-size: 2rem; }
+.setup-side .roomcode small { font-size: .7rem; max-width: 11rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.setup-side .players { gap: .4rem; }
+.setup-side .player { font-size: .8rem; }
+.setup-side .player img { width: 2.6rem; height: 2.6rem; }
 .where { font-size: 1.05rem; display: flex; align-items: baseline; gap: .6rem; }
 .where b { font-weight: normal; font-size: 2rem; color: var(--orange-d); line-height: 1.1; }
 .panel header { display: flex; align-items: center; gap: 1rem; align-self: stretch; }
