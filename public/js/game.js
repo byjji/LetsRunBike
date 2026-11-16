@@ -181,7 +181,7 @@ export class Race {
     for (const r of this.riders) {
       const z = track.start + r.dist * upm;
       const seg = track.segs[Math.floor(z)];
-      items.push({ kind: 'rider', z, x: r.x, ch: r.ch, phase: r.phase, lean: seg ? seg.curve * 22 * Math.min(1, r.speed) : 0, name: r.name, me: r === me });
+      items.push({ kind: 'rider', id: r.id, speed: r.speed, z, x: r.x, ch: r.ch, phase: r.phase, lean: seg ? seg.curve * 22 * Math.min(1, r.speed) : 0, name: r.name, me: r === me });
     }
     return { city: this.city, track, camPos, camX: me.x * 0.85, items, t, speed01: Math.min(1, me.speed / maxSpeed) };
   }

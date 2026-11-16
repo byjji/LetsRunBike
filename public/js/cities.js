@@ -31,7 +31,7 @@ export const CITIES = [
       through('seoul_gwanghwamun', '광화문', 6, ['흰 화강암 육축에 무지개문 3개(가운데가 큼)', '그 위 2층 기와 문루', '붉은 기둥과 녹색 단청', '양옆 낮은 돌담']),
       beside('seoul_geunjeongjeon', '경복궁', -1, 22, 20, ['2단 돌 월대와 난간', '2층 팔작 기와지붕, 처마 끝이 올라감', '붉은 기둥', '녹색 단청 띠']),
       beside('seoul_ntower', '남산 서울타워', 1, 34, 44, ['녹색 산 위', '흰 콘크리트 기둥', '위쪽 여러 단 원통 전망대', '붉은·흰 줄무늬 안테나']),
-      through('seoul_hangangbridge', '한강 다리', 80, ['길 양옆으로 이어지는 아치 트러스', '회색 교각', '아래 파란 강물']),
+      through('seoul_hangangbridge', '한강 다리', 80, ['길 양옆으로 이어지는 아치 트러스', '회색 교각', '아래 파란 강물'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_namsan', bearing: 35, dist: 520 }, { id: 'bg_lottetower', bearing: -40, dist: 560 }],
     roadside: [
@@ -51,7 +51,7 @@ export const CITIES = [
       beside('busan_haeundae', '해운대', 1, 30, 40, ['모래사장 뒤 유리 고층 건물 무리', '가장 높은 3동은 곡면', '파란 유리와 흰 테두리']),
       beside('busan_gamcheon', '감천문화마을', 1, 26, 20, ['언덕에 계단식으로 붙은 상자 집', '알록달록 파스텔 벽', '납작한 지붕', '좁은 계단길']),
       beside('busan_tower', '부산타워', 1, 24, 40, ['흰 원기둥', '위쪽 팔각 정자 모양 전망대', '꼭대기 뾰족한 침', '아래 공원 언덕']),
-      through('busan_gwanganbridge', '광안대교', 80, ['2층 트러스 상판', '주탑 2개', '늘어진 현수 케이블', '아래 바다']),
+      through('busan_gwanganbridge', '광안대교', 80, ['2층 트러스 상판', '주탑 2개', '늘어진 현수 케이블', '아래 바다'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_seahorizon', bearing: -70, dist: 500 }, { id: 'bg_hills', bearing: 60, dist: 520 }],
     roadside: [
@@ -225,7 +225,7 @@ export const CITIES = [
     sides: { left: 'land', right: 'land' }, lanes: 1,
     landmarks: [
       beside('newyork_liberty', '자유의 여신상', 1, 30, 40, ['청록색 여신', '별 모양 기단 위 돌 받침대', '뿔 7개 왕관', '치켜든 금색 횃불과 왼팔의 판']),
-      through('newyork_brooklynbridge', '브루클린 브리지', 80, ['돌 주탑 2개', '주탑마다 뾰족 아치 2개', '부채꼴로 퍼진 케이블', '아래 강물']),
+      through('newyork_brooklynbridge', '브루클린 브리지', 80, ['돌 주탑 2개', '주탑마다 뾰족 아치 2개', '부채꼴로 퍼진 케이블', '아래 강물'], { bridge: true }),
       beside('newyork_empirestate', '엠파이어 스테이트 빌딩', -1, 26, 56, ['단계적으로 좁아지는 석조 탑', '세로 줄 창', '꼭대기 둥근 첨탑과 안테나']),
       beside('newyork_timessquare', '타임스스퀘어', 1, 16, 26, ['색 전광판이 붙은 건물들(글자·로고 없음)', '모서리가 뾰족한 삼각 건물', '붉은 계단', '앞쪽 가로수']),
     ],
@@ -246,7 +246,7 @@ export const CITIES = [
       beside('sanfrancisco_paintedladies', '페인티드 레이디스', -1, 14, 14, ['나란한 빅토리아풍 집 6채', '집마다 다른 파스텔 색', '뾰족 박공지붕과 돌출창', '앞 계단']),
       beside('sanfrancisco_lombard', '롬바드 스트리트', -1, 20, 18, ['언덕을 내려오는 지그재그 길', '붉은 벽돌 포장', '굽이마다 꽃밭', '양옆 집']),
       beside('sanfrancisco_transamerica', '트랜스아메리카 피라미드', -1, 28, 52, ['흰색의 뾰족한 피라미드 빌딩', '위쪽 양옆 날개', '줄지은 창', '꼭대기 뾰족탑']),
-      through('sanfrancisco_goldengate', '금문교', 80, ['인터내셔널 오렌지색', '주탑 2개에 가로대 4단', '늘어진 주 케이블과 세로 줄', '아래 바다']),
+      through('sanfrancisco_goldengate', '금문교', 80, ['인터내셔널 오렌지색', '주탑 2개에 가로대 4단', '늘어진 주 케이블과 세로 줄', '아래 바다'], { bridge: true }),
     ],
     backdrop: [{ id: 'bg_alcatraz', bearing: 50, dist: 420 }, { id: 'bg_hills', bearing: -50, dist: 520 }],
     roadside: [

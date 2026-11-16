@@ -1,6 +1,6 @@
 // App glue: screens, settings, race loop, HUD, friend rooms.
-import { COURSES, courseById } from './courses.js';
-import { CHARS, charById, faceURL, spriteURL, clearSprites } from './sprites.js';
+import { COUNTRIES, cityById, citiesOf } from './cities.js';
+import { CHARS, charById, faceURL, clearSprites } from './sprites.js';
 import { Renderer } from './render.js';
 import { Race, buildTrack } from './game.js';
 import { SpeedInput, BikeSensor } from './input.js';
@@ -14,10 +14,11 @@ const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
 
 // ---------- persistent settings ----------
 const S = {
-  name: '', char: 'bunny', course: 'forest', npc: 3, diff: 1, len: 400,
+  name: '', char: 'bunny', course: 'seoul', npc: 3, diff: 1, len: 400,
   inputMode: 'auto', autoKmh: 6, maxKmh: 12, wheel: 960, vis: 2, music: true, sfx: true,
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem('lrb') || '{}')); } catch { /* first run */ }
+S.course = cityById(S.course).id; // old saved course ids fall back to Seoul
 const save = () => { try { localStorage.setItem('lrb', JSON.stringify(S)); } catch { /* private mode */ } };
 
 // ---------- core objects ----------
@@ -34,7 +35,9 @@ let race = null;
 let paused = false;
 let resultTimer = 0;
 let confetti = [];
-let demo = { course: null, track: null, z: 0 };
+let demo = { city: null, track: null, z: 0 };
+let demoFixed = null;         // debug: /?demo=<city>&at=<0..1> freezes the fly-through there
+let pickCountry = null;       // country tab shown on the setup screen
 let pins = new Map();
 let screen = 'home';
 
@@ -101,9 +104,16 @@ function renderSetup() {
   $('#wait-msg').hidden = !locked;
   $('#roombox').hidden = mode === 'solo';
 
-  $('#courses').replaceChildren(...COURSES.map((c) => {
-    const b = el('button', 'card' + (c.id === config.course ? ' sel' : ''));
-    const img = el('img'); img.src = spriteURL(c.icon); img.alt = '';
+  const cur = cityById(config.course);
+  if (locked || !pickCountry) pickCountry = cur.country;
+  chips('#countries', COUNTRIES.map((c) => [c.id, `${c.flag} ${c.name}`]), pickCountry, (v) => {
+    pickCountry = v;
+    if (cur.country !== v) setConfig({ course: citiesOf(v)[0].id }); else renderSetup();
+  });
+  $('#courses').replaceChildren(...citiesOf(pickCountry).map((c) => {
+    const b = el('button', 'card' + (c.id === cur.id ? ' sel' : ''));
+    const img = el('img'); img.alt = '';
+    renderer?.thumb(c.id).then((url) => { img.src = url; });
     b.append(img, el('span', '', c.name));
     b.onclick = () => { sound.unlock(); sound.sfx('click'); setConfig({ course: c.id }); };
     return b;
@@ -125,6 +135,7 @@ function renderSetup() {
 }
 function openSetup(m) {
   mode = m;
+  pickCountry = null;
   if (m !== 'guest' || !config) config = { course: S.course, npc: S.npc, diff: S.diff, len: S.len };
   renderSetup();
   show('setup');
@@ -165,8 +176,8 @@ window.setBikeSpeed = (kmh) => sensor.external(kmh); // hook for custom sensors
 
 // ---------- race ----------
 function startRace({ cfg, seed, players, myId, sim }) {
-  const course = courseById(cfg.course);
-  race = new Race({ course, lengthM: cfg.len, npc: cfg.npc, diff: cfg.diff, seed, vis: S.vis, players, myId, sim });
+  const city = cityById(cfg.course);
+  race = new Race({ city, lengthM: cfg.len, npc: cfg.npc, diff: cfg.diff, seed, vis: S.vis, players, myId, sim });
   race.on = onRaceEvent;
   paused = false; confetti = []; clearTimeout(resultTimer);
   input.reset();
@@ -178,7 +189,7 @@ function startRace({ cfg, seed, players, myId, sim }) {
   $('#btn-go').textContent = '멈춤';
   $('#star-n').textContent = '0';
   buildPins();
-  sound.unlock(); sound.startMusic(course.tune);
+  sound.unlock(); sound.startMusic(city.tune);
   navigator.wakeLock?.request('screen').catch(() => {});
   document.activeElement?.blur();
 }
@@ -203,6 +214,8 @@ function onRaceEvent(type, v) {
   else if (type === 'star') {
     $('#star-n').textContent = v; sound.sfx('star');
     const s = $('#stars'); s.classList.remove('pop'); void s.offsetWidth; s.classList.add('pop');
+  } else if (type === 'landmark') {
+    big(v, true); sound.sfx('cheer');
   } else if (type === 'milestone') {
     big(`${v}m! ${['잘한다!', '멋져요!', '씽씽!', '최고야!'][(v / 100) % 4]}`, true); sound.sfx('cheer');
   } else if (type === 'finish') {
@@ -325,7 +338,7 @@ tap('#btn-start', () => (mode === 'host' ? net.send({ t: 'start' }) : soloStart(
 tap('#btn-sensor', connectSensor);
 tap('#btn-sensor2', connectSensor);
 tap('#btn-pause', () => { paused = true; if (mode === 'solo') sound.stopMusic(); show('pause'); });
-tap('#btn-resume', () => { paused = false; show('none'); if (mode === 'solo' && race) sound.startMusic(race.course.tune); });
+tap('#btn-resume', () => { paused = false; show('none'); if (mode === 'solo' && race) sound.startMusic(race.city.tune); });
 tap('#btn-quit', goHome);
 tap('#btn-home', goHome);
 tap('#btn-again', () => {
@@ -381,23 +394,24 @@ function frame(now) {
 
   if (race) {
     if (!(paused && mode === 'solo')) race.update(dt, input.update(dt));
-    renderer.render(race.scene(t, S.maxKmh / 3.6));
+    renderer?.render(race.scene(t, S.maxKmh / 3.6));
     if (!$('#hud').hidden) updateHud();
     if (room && (netAcc += dt) > 0.1) { netAcc = 0; net.send(race.netState()); }
     if ((uiAcc += dt) > 0.5) { uiAcc = 0; if (screen === 'result') renderResult(); }
     drawConfetti(dt);
   } else {
     // attract mode: slow fly-through of the selected course behind the menus
-    const course = courseById(config?.course || S.course);
-    if (demo.course !== course) demo = { course, track: buildTrack(course, 500, 1.2, 7), z: 0 };
+    const city = cityById(demoFixed?.city || config?.course || S.course);
+    if (demo.city !== city) demo = { city, track: buildTrack(city, 500, 1.2, 7), z: 0 };
     demo.z += dt * 5;
     if (demo.z > demo.track.finish - 40) demo.z = 0;
-    renderer.render({ course, track: demo.track, camPos: 38 + demo.z, items: [], t, skyOff: 0, speed01: 0 });
+    const camPos = demoFixed ? demo.track.start + demoFixed.at * demo.track.units + (demoFixed.go ? (t * 4) % 30 : 0) : 38 + demo.z;
+    renderer?.render({ city, track: demo.track, camPos, items: [], t, speed01: 0 });
     if ((uiAcc += dt) > 0.5) { uiAcc = 0; if (screen === 'settings') renderSensor(); }
   }
 }
 function drawConfetti(dt) {
-  if (!confetti.length) return;
+  if (!confetti.length || !renderer) return;
   const g = renderer.g, W = renderer.W, H = renderer.H;
   for (const p of confetti) {
     p.x += p.vx * dt; p.y += p.vy * dt; p.a += dt * 5;
@@ -414,10 +428,13 @@ async function boot() {
   // wait briefly for the web font so cached sprites/labels use it
   try { await Promise.race([document.fonts.load('20px Jua'), new Promise((r) => setTimeout(r, 1500))]); } catch { /* offline */ }
   clearSprites();
-  renderer = new Renderer(cv);
+  try { renderer = new Renderer(cv, $('#fx')); }
+  catch { toast('이 기기에서는 3D 화면을 그릴 수 없어요.', 8000); }
+  window.__lrb = { get renderer() { return renderer; }, get race() { return race; } }; // debugging aid
   renderHome();
-  const code = new URLSearchParams(location.search).get('room');
-  if (code && /^\d{4}$/.test(code)) { $('#code-input').value = code; show('join'); }
+  const q = new URLSearchParams(location.search), code = q.get('room');
+  if (q.get('demo')) { demoFixed = { city: q.get('demo'), at: +q.get('at') || 0, go: q.has('go') }; show('none'); }
+  else if (code && /^\d{4}$/.test(code)) { $('#code-input').value = code; show('join'); }
   else show('home');
   requestAnimationFrame(frame);
 }
