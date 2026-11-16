@@ -7,6 +7,7 @@ import { mat, box, cyl, sphere, at, group, bake, disposeTree, WATER, WATER_Y } f
 import { buildRider, buildStar } from './riders.js';
 import { PROPS } from './props.js';
 import { AMBIENT } from './ambient.js';
+import { LANDMARKS, buildLandmark, loadLandmark } from './landmarks/index.js';
 
 const SHORE = RW + 6;
 const FONT = '"Jua", "Malgun Gothic", sans-serif';
@@ -30,6 +31,7 @@ export class World {
     this.#ground();
     this.#gates();
     this.#props();
+    this.#landmarks();
     for (const a of city.ambient) this.parts.push(AMBIENT[a.type](this, a));
   }
 
@@ -153,6 +155,32 @@ export class World {
     }
   }
 
+  #landmarks() {
+    const { city, layout, scene } = this;
+    // distant scenery: stays at a fixed bearing around the camera
+    this.far = new THREE.Group(); scene.add(this.far);
+    for (const b of city.backdrop) {
+      if (!LANDMARKS[b.id]) continue;
+      const g = bake(LANDMARKS[b.id]()), a = (b.bearing * Math.PI) / 180;
+      g.position.set(-Math.sin(a) * b.dist, 0, Math.cos(a) * b.dist);
+      g.rotation.y = Math.atan2(Math.sin(a), -Math.cos(a));
+      this.far.add(g);
+    }
+    for (const m of layout.landmarks) {
+      if (!LANDMARKS[m.def.id]) continue;
+      const turn = m.def.through ? 0 : Math.sign(m.lateral) * (Math.PI / 2 + 0.3);   // front toward the road and the oncoming rider
+      let g = this.place(buildLandmark(m.def, m.span), m.s, m.lateral, turn);
+      scene.add(g);
+      if (m.def.model) {
+        loadLandmark(m.def, { span: m.span }).then((obj) => {
+          if (this.disposed) { disposeTree(obj); return; }
+          scene.remove(g); disposeTree(g);
+          g = this.place(obj, m.s, m.lateral, turn); scene.add(g);
+        });
+      }
+    }
+  }
+
   /** Material whose instances bend in the wind: displacement grows with height squared. */
   swayMaterial(sway) {
     const m = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
@@ -247,10 +275,12 @@ export class World {
     this.time.value = t;
     sample(this.path, camS, 0, this.cam);
     this.base.position.x = this.cam.x; this.base.position.z = this.cam.z;
+    this.far.position.set(this.cam.x, 0, this.cam.z);
     for (const p of this.parts) p.update(camS, t, dt);
   }
 
   dispose() {
+    this.disposed = true;
     for (const p of this.parts) p.dispose?.();
     disposeTree(this.scene);
     for (const t of this.textures) t.dispose();

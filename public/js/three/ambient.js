@@ -171,13 +171,15 @@ function mover(world, opts) {
   const n = world.path.n, cross = opts.onlyThrough ? world.layout.landmarks.find((m) => m.def.id === opts.onlyThrough) : null;
   if (opts.onlyThrough && !cross) return { update() {} };
   const line = LINES[k.line];
+  // ground lanes stop where the road goes through a gate or over a bridge
+  const blocked = (s) => baseY === 0 && world.layout.landmarks.some((m) => m.def.through && Math.abs(s - m.s) < m.span / 2 + 8);
   const baseY = k.line === 'water' ? WATER_Y : k.line === 'cable' ? (opts.y || 14) : line.y;
   if (line && !cross) {
     const count = Math.floor(n / line.step);
     const im = instanced(world, line.build(baseY), count);
     for (let i = 0; i < count; i++) {
       sample(world.path, (i + 0.5) * line.step, opts.lateral, _p);
-      _d.position.set(_p.x, 0, _p.z); _d.rotation.set(0, _p.yaw, 0); _d.scale.setScalar(1); _d.updateMatrix();
+      _d.position.set(_p.x, 0, _p.z); _d.rotation.set(0, _p.yaw, 0); _d.scale.setScalar(blocked((i + 0.5) * line.step) ? 0.0001 : 1); _d.updateMatrix();
       im.setMatrixAt(i, _d.matrix); im.setColorAt(i, _c.set('#ffffff'));
     }
     im.frustumCulled = false;
@@ -199,7 +201,7 @@ function mover(world, opts) {
       const head = camS + (oncoming ? reach - u * (reach + 60) : -50 + u * (reach + 50));
       cars.forEach((c, i) => {
         const s = head - (oncoming ? -1 : 1) * i * k.len;
-        if (s < 1 || s > n - 1) { c.visible = false; return; }
+        if (s < 1 || s > n - 1 || blocked(s)) { c.visible = false; return; }
         c.visible = true;
         sample(world.path, s, opts.lateral, _p);
         c.position.set(_p.x, baseY + (k.line === 'water' ? Math.sin(t * 1.5 + i) * 0.08 : 0), _p.z);
@@ -232,6 +234,8 @@ function particles(world, opts) {
         pos[i * 3] = wrap(hash(i) * 2 * R + t * k.drift * (0.4 + world.wind) + sway, cx);
         pos[i * 3 + 1] = H - frac(hash(i + 100) + (t * k.fall * (0.7 + hash(i + 200) * 0.6)) / H) * H;
         pos[i * 3 + 2] = wrap(hash(i + 300) * 2 * R + Math.cos(t * 1.1 + i) * 0.6, cz);
+        // never right in front of the lens, where a flake would fill the screen
+        if (Math.abs(pos[i * 3] - cx) < 7 && Math.abs(pos[i * 3 + 2] - cz) < 7) pos[i * 3 + 1] = -50;
       }
       geo.attributes.position.needsUpdate = true;
     },

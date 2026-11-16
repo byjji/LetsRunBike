@@ -430,7 +430,23 @@ async function boot() {
   clearSprites();
   try { renderer = new Renderer(cv, $('#fx')); }
   catch { toast('이 기기에서는 3D 화면을 그릴 수 없어요.', 8000); }
-  window.__lrb = { get renderer() { return renderer; }, get race() { return race; } }; // debugging aid
+  // debugging aids: __lrb.demo('seoul', 0.4) freezes the fly-through; __lrb.shots([['seoul', 0.2], ...]) shows a contact sheet
+  window.__lrb = {
+    get renderer() { return renderer; }, get race() { return race; },
+    demo(city, at = 0, go = false) { demoFixed = { city, at, go }; show('none'); },
+    async shots(list, cols = 2) {
+      const rows = Math.ceil(list.length / cols), w = Math.floor(innerWidth / cols), h = Math.floor(innerHeight / rows);
+      let sheet = $('#sheet');
+      if (!sheet) { sheet = el('canvas'); sheet.id = 'sheet'; sheet.style.cssText = 'position:fixed;inset:0;z-index:99'; document.body.append(sheet); }
+      sheet.width = innerWidth; sheet.height = innerHeight;
+      const g = sheet.getContext('2d');
+      for (let i = 0; i < list.length; i++) {
+        this.demo(list[i][0], list[i][1]);
+        await new Promise((r) => setTimeout(r, 500));
+        await new Promise((r) => requestAnimationFrame(() => { g.drawImage(cv, (i % cols) * w, Math.floor(i / cols) * h, w, h); r(); }));
+      }
+    },
+  };
   renderHome();
   const q = new URLSearchParams(location.search), code = q.get('room');
   if (q.get('demo')) { demoFixed = { city: q.get('demo'), at: +q.get('at') || 0, go: q.has('go') }; show('none'); }

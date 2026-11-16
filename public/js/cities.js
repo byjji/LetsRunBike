@@ -41,7 +41,7 @@ export const CITIES = [
       { n: ['lamp'], p: 0.04, min: 1.4, max: 1.8 },
       { n: ['bush', 'flowers'], p: 0.1, min: 1.5, max: 7 },
     ],
-    ambient: [WIND, CROWD, birds('pigeon'), BUTTERFLIES, mover('subway', -16, 26, 14, { elevated: true }), mover('cruise', 30, 6, 30, { onlyThrough: 'seoul_hangangbridge' }), particles('leaf')],
+    ambient: [WIND, CROWD, birds('pigeon'), BUTTERFLIES, mover('subway', -36, 26, 14, { elevated: true }), mover('cruise', 30, 6, 30, { onlyThrough: 'seoul_hangangbridge' }), particles('leaf')],
   }),
   city({
     id: 'busan', country: 'kr', name: '부산', tune: 1, hero: 'busan_gwanganbridge',

@@ -4,6 +4,8 @@ import * as THREE from 'three';
 import { sample } from './path.js';
 import { cityById } from './cities.js';
 import { World } from './three/world.js';
+import { LANDMARKS, buildLandmark } from './three/landmarks/index.js';
+import { disposeTree } from './three/kit.js';
 
 const CAM_BACK = 6.5;       // camera distance behind the player
 const CAM_H = 3.6;          // camera height
@@ -96,11 +98,32 @@ export class Renderer {
   async thumb(cityId, size = 256) {
     if (this.thumbs.has(cityId)) return this.thumbs.get(cityId);
     const city = cityById(cityId);
+    const def = city.landmarks.find((l) => l.id === city.hero);
+    if (!LANDMARKS[def.id]) return '';
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(city.sky[1]);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0xdddddd, 1.9));
+    const sun = new THREE.DirectionalLight(0xfff4e0, 1.7); sun.position.set(-0.6, 1, 0.8); scene.add(sun);
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(400, 24).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: city.ground[0] }));
+    ground.position.y = def.through ? -3.5 : -0.02;
+    const lm = buildLandmark(def, Math.min(def.span, 44));
+    scene.add(ground, lm);
+    const cam = new THREE.PerspectiveCamera(35, 1, 1, 2000);
+    let cx = 0, cy = def.h * 0.5, r = def.h * 0.75, dir = [0.55, 0.3, 1];
+    if (def.through) { const box = new THREE.Box3().setFromObject(lm); cy = Math.max(5, box.max.y * 0.45); r = Math.max(14, box.max.y * 0.8, def.span > 6 ? 24 : 0); dir = def.span > 6 ? [1, 0.35, 0.75] : [0.5, 0.25, 1]; }
+    else { const box = new THREE.Box3().setFromObject(lm); cx = (box.min.x + box.max.x) / 2; r = Math.max(def.h * 0.56, Math.min((box.max.x - box.min.x) * 0.55, def.h * 0.72)); }
+    const dl = Math.hypot(...dir), dist = (r / Math.tan((35 * Math.PI) / 360)) * 1.05;
+    cam.position.set(cx + (dir[0] / dl) * dist, cy + (dir[1] / dl) * dist, (dir[2] / dl) * dist);
+    cam.lookAt(cx, cy, 0);
+    cam.aspect = this.W / this.H; cam.updateProjectionMatrix();
+    // draw into the main canvas, then copy its centre square out in the same tick
+    cam.fov = 2 * Math.atan(Math.tan((35 * Math.PI) / 360)) * (180 / Math.PI); cam.updateProjectionMatrix();
+    this.gl.render(scene, cam);
     const c = document.createElement('canvas'); c.width = c.height = size;
-    const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, size);
-    gr.addColorStop(0, city.sky[0]); gr.addColorStop(1, city.sky[1]);
-    g.fillStyle = gr; g.fillRect(0, 0, size, size);
-    const url = c.toDataURL();
+    const side = Math.min(this.W, this.H);
+    c.getContext('2d').drawImage(this.cv, (this.W - side) / 2, (this.H - side) / 2, side, side, 0, 0, size, size);
+    disposeTree(scene); ground.material.dispose();
+    const url = c.toDataURL('image/jpeg', 0.85);
     this.thumbs.set(cityId, url);
     return url;
   }
