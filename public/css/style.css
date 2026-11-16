@@ -60,9 +60,22 @@ h3 { font-size: 1.05rem; opacity: .7; margin: .3rem 0 .35rem; }
 .card { font: inherit; color: var(--ink); background: #fff; border: .25rem solid transparent; border-radius: 1.1rem; padding: .4rem .6rem; cursor: pointer; display: flex; flex-direction: column; align-items: center; font-size: 1.1rem; }
 .card img { width: 5rem; height: 5rem; object-fit: contain; }
 .card.sel { border-color: var(--orange); background: #fff1dc; transform: scale(1.05); }
-.courses { display: grid; grid-template-columns: repeat(5, 1fr); gap: .7rem; }
-.courses .card { font-size: 1.35rem; padding: .6rem .3rem; }
-.courses .card img { width: 5.5rem; height: 5.5rem; }
+/* country map with city pictures at their real places */
+.citymap { position: relative; margin: 0 auto; width: min(100%, calc(min(42vh, 23rem) * var(--ratio, 1.4))); aspect-ratio: var(--ratio, 1.4); border-radius: 1.2rem; overflow: hidden; background: linear-gradient(#bfe6ff, #8fd0f7); flex-shrink: 0; }
+.citymap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.citymap .land { fill: #a8dc8a; stroke: #6fb85a; stroke-width: .8; stroke-linejoin: round; }
+.citymap .lead { stroke: #3b3054; stroke-width: .5; stroke-dasharray: 1.2 1; opacity: .55; }
+.citymap .dot { fill: #ff5a4d; stroke: #fff; stroke-width: .6; }
+.pin { position: absolute; transform: translate(-50%, -50%); font: inherit; color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+.pin img { display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: .22rem solid #fff; box-shadow: 0 .2rem .5rem rgba(0, 0, 0, .28); background: #dff3ff; box-sizing: border-box; transition: transform .12s; }
+.pin span { position: absolute; top: 100%; margin-top: -.25rem; font-size: 1.05rem; line-height: 1; background: #fff; border-radius: .6rem; padding: .12rem .5rem; white-space: nowrap; box-shadow: 0 .12rem 0 rgba(0, 0, 0, .15); }
+.pin.sel { z-index: 2; }
+.pin.sel img { border-color: var(--orange); transform: scale(1.18); box-shadow: 0 0 0 .25rem rgba(255, 138, 61, .35), 0 .3rem .7rem rgba(0, 0, 0, .3); }
+.pin.sel span { background: var(--orange); color: #fff; }
+.pin:focus-visible img { outline: .3rem solid var(--yellow); }
+.locked .pin { pointer-events: none; }
+.locked .pin:not(.sel) { opacity: .45; }
+#city-name { color: var(--orange-d); font-size: 1em; margin-left: .4rem; }
 .chips { display: flex; gap: .45rem; flex-wrap: wrap; }
 .chip { font: inherit; font-size: 1.15rem; color: var(--ink); background: #fff; border: .2rem solid transparent; border-radius: .9rem; padding: .3rem .8rem; cursor: pointer; min-width: 2.6rem; }
 .chip.sel { background: var(--orange); color: #fff; }

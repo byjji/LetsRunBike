@@ -1,4 +1,6 @@
 // Countries, cities and what appears in each city. Pure data: no drawing code here.
+// geo = [latitude, longitude] of the real city; pin = where its picture sits on the map, relative to that point.
+// thumb = optional picture-only model for the city card (otherwise the hero landmark is shown).
 // Prop names → three/props.js, landmark ids → three/landmarks/*, ambient kinds → three/ambient.js.
 
 export const COUNTRIES = [
@@ -24,7 +26,7 @@ const BUTTERFLIES = { type: 'butterflies' };
 export const CITIES = [
   // ------------------------------------------------------------------ 한국
   city({
-    id: 'seoul', country: 'kr', name: '서울', tune: 0, hero: 'seoul_ntower',
+    id: 'seoul', geo: [37.57, 126.98], pin: [-24, -12], country: 'kr', name: '서울', tune: 0, hero: 'seoul_ntower',
     sky: ['#58b8ff', '#d8f1ff'], fog: '#d8f1ff', ground: ['#93d36a', '#89cb60'], road: ['#b9bcc6', '#b0b3be'], edge: ['#ffffff', '#ffd23f'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -44,7 +46,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('pigeon'), BUTTERFLIES, mover('subway', -36, 26, 14, { elevated: true }), mover('cruise', 30, 6, 30, { onlyThrough: 'seoul_hangangbridge' }), particles('leaf')],
   }),
   city({
-    id: 'busan', country: 'kr', name: '부산', tune: 1, hero: 'busan_gwanganbridge',
+    id: 'busan', geo: [35.18, 129.08], pin: [14, 32], country: 'kr', name: '부산', tune: 1, hero: 'busan_gwanganbridge', thumb: 'thumb_gwangalli',
     sky: ['#3fb2ff', '#dff6ff'], fog: '#dff6ff', ground: ['#ffe6a8', '#fbdd98'], road: ['#c9c2b4', '#c0b9ab'], edge: ['#ffffff', '#59c3ff'],
     sides: { left: 'water', right: 'sand' },
     landmarks: [
@@ -64,7 +66,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('gull'), mover('boat', -40, 5, 16), mover('ferry', -70, 4, 40), mover('gondola', -22, 5, 12, { y: 14 }), floater('waves')],
   }),
   city({
-    id: 'suwon', country: 'kr', name: '수원', tune: 3, hero: 'suwon_janganmun',
+    id: 'suwon', geo: [37.26, 127.03], pin: [-26, 20], country: 'kr', name: '수원', tune: 3, hero: 'suwon_janganmun',
     sky: ['#62c0ff', '#e2f5ff'], fog: '#e2f5ff', ground: ['#8fd067', '#86c85e'], road: ['#d8c9a8', '#cfc09e'], edge: ['#f6efe0', '#a8703f'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -83,7 +85,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('magpie'), BUTTERFLIES, floater('balloon', { lateral: 40, y: 45 }), particles('petal')],
   }),
   city({
-    id: 'ulsan', country: 'kr', name: '울산', tune: 1, hero: 'ulsan_ganjeolgot',
+    id: 'ulsan', geo: [35.54, 129.31], pin: [34, 6], country: 'kr', name: '울산', tune: 1, hero: 'ulsan_daewangam',
     sky: ['#49b6ff', '#e0f7ff'], fog: '#e0f7ff', ground: ['#9bd66f', '#92ce66'], road: ['#c6c2ba', '#bdb9b1'], edge: ['#ffffff', '#3aa0e8'],
     sides: { left: 'land', right: 'water' },
     landmarks: [
@@ -102,7 +104,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('gull'), floater('whale', { lateral: 38 }), mover('boat', 60, 5, 20), mover('ferry', 90, 4, 45), floater('waves')],
   }),
   city({
-    id: 'gyeongju', country: 'kr', name: '경주', tune: 0, hero: 'gyeongju_cheomseongdae',
+    id: 'gyeongju', geo: [35.86, 129.22], pin: [22, -22], country: 'kr', name: '경주', tune: 0, hero: 'gyeongju_cheomseongdae',
     sky: ['#6cc4ff', '#e6f6ff'], fog: '#e6f6ff', ground: ['#a2d86c', '#99d063'], road: ['#e3d2ac', '#dac9a2'], edge: ['#f8f0dc', '#b98a4e'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -123,7 +125,7 @@ export const CITIES = [
 
   // ------------------------------------------------------------------ 일본
   city({
-    id: 'tokyo', country: 'jp', name: '도쿄', tune: 3, hero: 'tokyo_tower',
+    id: 'tokyo', geo: [35.68, 139.69], pin: [24, 2], country: 'jp', name: '도쿄', tune: 3, hero: 'tokyo_tower',
     sky: ['#5fbcff', '#e4f4ff'], fog: '#e4f4ff', ground: ['#b9d9a0', '#b0d197'], road: ['#aeb2bd', '#a5a9b5'], edge: ['#ffffff', '#ff8fb1'],
     sides: { left: 'land', right: 'land' }, lanes: 1,
     landmarks: [
@@ -142,7 +144,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('pigeon'), particles('petal'), mover('shinkansen', 18, 45, 12, { elevated: true }), mover('taxi', -8.5, 9, 8)],
   }),
   city({
-    id: 'kyoto', country: 'jp', name: '교토', tune: 0, hero: 'kyoto_kinkakuji',
+    id: 'kyoto', geo: [35.01, 135.77], pin: [-16, -24], country: 'jp', name: '교토', tune: 0, hero: 'kyoto_kinkakuji',
     sky: ['#70c2ff', '#ffeeda'], fog: '#ffeeda', ground: ['#a8cf78', '#9fc76f'], road: ['#d9cdb6', '#d0c4ac'], edge: ['#f4ead6', '#c0392b'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -161,7 +163,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, BUTTERFLIES, birds('magpie'), particles('leaf'), floater('koi', { lateral: -9 })],
   }),
   city({
-    id: 'osaka', country: 'jp', name: '오사카', tune: 3, hero: 'osaka_castle',
+    id: 'osaka', geo: [34.69, 135.5], pin: [-22, 22], country: 'jp', name: '오사카', tune: 3, hero: 'osaka_castle',
     sky: ['#55b9ff', '#e2f4ff'], fog: '#e2f4ff', ground: ['#a9d68a', '#a0ce81'], road: ['#b3b6c0', '#aaadb8'], edge: ['#ffffff', '#ffa24d'],
     sides: { left: 'land', right: 'land' }, lanes: 1,
     landmarks: [
@@ -180,7 +182,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('pigeon'), mover('subway', -62, 24, 13, { elevated: true }), mover('taxi', -8.5, 9, 9), particles('petal')],
   }),
   city({
-    id: 'sapporo', country: 'jp', name: '삿포로', tune: 2, hero: 'sapporo_clocktower',
+    id: 'sapporo', geo: [43.06, 141.35], pin: [-26, -2], country: 'jp', name: '삿포로', tune: 2, hero: 'sapporo_clocktower',
     sky: ['#86c8f5', '#f2f9ff'], fog: '#f2f9ff', ground: ['#f6fbff', '#eaf3fb'], road: ['#c4cbd6', '#bbc2ce'], edge: ['#ffffff', '#7fb8e8'],
     sides: { left: 'snow', right: 'snow' },
     landmarks: [
@@ -199,7 +201,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('magpie'), particles('snow'), mover('tram', -8.5, 8, 12), floater('skijumper')],
   }),
   city({
-    id: 'shizuoka', country: 'jp', name: '시즈오카', tune: 1, hero: 'shizuoka_teafield',
+    id: 'shizuoka', geo: [34.98, 138.38], pin: [12, 26], country: 'jp', name: '시즈오카', tune: 1, hero: 'shizuoka_teafield',
     sky: ['#52b7ff', '#e6f7ff'], fog: '#e6f7ff', ground: ['#8fcf63', '#86c75a'], road: ['#cfc8b8', '#c6bfae'], edge: ['#ffffff', '#3d9b4f'],
     sides: { left: 'land', right: 'water' },
     landmarks: [
@@ -220,7 +222,7 @@ export const CITIES = [
 
   // ------------------------------------------------------------------ 미국
   city({
-    id: 'newyork', country: 'us', name: '뉴욕', tune: 3, hero: 'newyork_liberty',
+    id: 'newyork', geo: [40.71, -74.0], pin: [12, 10], country: 'us', name: '뉴욕', tune: 3, hero: 'newyork_liberty',
     sky: ['#57b6ff', '#e0f2ff'], fog: '#e0f2ff', ground: ['#9fcf82', '#96c779'], road: ['#9fa3ad', '#969aa5'], edge: ['#ffffff', '#ffd23f'],
     sides: { left: 'land', right: 'land' }, lanes: 1,
     landmarks: [
@@ -239,7 +241,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('pigeon'), mover('taxi', -8.5, 10, 6), mover('ferry', 34, 5, 30, { onlyThrough: 'newyork_brooklynbridge' }), particles('leaf')],
   }),
   city({
-    id: 'sanfrancisco', country: 'us', name: '샌프란시스코', tune: 1, hero: 'sanfrancisco_goldengate',
+    id: 'sanfrancisco', geo: [37.77, -122.42], pin: [-10, 6], country: 'us', name: '샌프란시스코', tune: 1, hero: 'sanfrancisco_goldengate',
     sky: ['#4db3ff', '#e9f6ff'], fog: '#e9f6ff', ground: ['#a8d47a', '#9fcc71'], road: ['#aaadb6', '#a1a4ae'], edge: ['#ffffff', '#f05a28'],
     sides: { left: 'land', right: 'water' },
     landmarks: [

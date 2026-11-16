@@ -98,20 +98,22 @@ export class Renderer {
   async thumb(cityId, size = 256) {
     if (this.thumbs.has(cityId)) return this.thumbs.get(cityId);
     const city = cityById(cityId);
-    const def = city.landmarks.find((l) => l.id === city.hero);
+    // a city may name a picture-only model (thumb); otherwise its hero landmark is shown
+    const def = city.thumb ? { id: city.thumb, h: 30, through: false, span: 0 } : city.landmarks.find((l) => l.id === city.hero);
     if (!LANDMARKS[def.id]) return '';
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(city.sky[1]);
     scene.add(new THREE.HemisphereLight(0xffffff, 0xdddddd, 1.9));
     const sun = new THREE.DirectionalLight(0xfff4e0, 1.7); sun.position.set(-0.6, 1, 0.8); scene.add(sun);
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(400, 24).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: city.ground[0] }));
-    ground.position.y = def.through ? -3.5 : -0.02;
+    const sea = def.through || def.wet;      // bridges and sea rocks sit in water
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(900, 24).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ color: sea ? '#3aa7ea' : city.ground[0] }));
+    ground.position.y = def.through ? -3.2 : def.wet ? -1.6 : -0.02;
     const lm = buildLandmark(def, Math.min(def.span, 44));
     scene.add(ground, lm);
     const cam = new THREE.PerspectiveCamera(35, 1, 1, 2000);
     let cx = 0, cy = def.h * 0.5, r = def.h * 0.75, dir = [0.55, 0.3, 1];
     if (def.through) { const box = new THREE.Box3().setFromObject(lm); cy = Math.max(5, box.max.y * 0.45); r = Math.max(14, box.max.y * 0.8, def.span > 6 ? 24 : 0); dir = def.span > 6 ? [1, 0.35, 0.75] : [0.5, 0.25, 1]; }
-    else { const box = new THREE.Box3().setFromObject(lm); cx = (box.min.x + box.max.x) / 2; r = Math.max(def.h * 0.56, Math.min((box.max.x - box.min.x) * 0.55, def.h * 0.72)); }
+    else { const box = new THREE.Box3().setFromObject(lm); cx = (box.min.x + box.max.x) / 2; r = Math.max(def.h * 0.56, Math.min((box.max.x - box.min.x) * 0.4, def.h * 1.5)); cy = Math.min(cy, r * 0.75); }
     const dl = Math.hypot(...dir), dist = (r / Math.tan((35 * Math.PI) / 360)) * 1.05;
     cam.position.set(cx + (dir[0] / dl) * dist, cy + (dir[1] / dl) * dist, (dir[2] / dl) * dist);
     cam.lookAt(cx, cy, 0);

@@ -79,6 +79,16 @@ function busan_gwanganbridge(span = 80) {
   return g;
 }
 
+// 도시 카드용 그림: 광안리 바닷가 — 모래사장과 파라솔, 바다 건너 광안대교
+function thumb_gwangalli() {
+  const g = group(at(box(120, 0.1, 80, SEA), 0, 0.03, -34), at(box(120, 0.4, 26, SAND), 0, 0, 12), at(box(120, 0.14, 2.4, '#ffffff'), 0, 0.06, -1.4));
+  const br = suspensionSpan(110, { towerX: 30, towerH: 26, deckY: 8, doubleDeck: true, color: '#f6f8fa', y0: 0 });
+  g.add(at(br, 0, 0, -30));
+  for (let i = 0; i < 5; i++) { const x = -22 + i * 11, z = 8 + (i % 2) * 5; g.add(at(cyl(0.12, 0.12, 4, '#ffffff', 5), x, 0.4, z), at(cone(3.2, 1.3, ['#ff6b6b', '#ffd23f', '#59c3ff', '#ff9fbd', '#5fd36a'][i], 8), x, 4.2, z), at(box(4.6, 0.3, 1.8, '#59c3ff'), x + 1, 0.5, z + 2.6)); }
+  for (const [x, h] of [[-48, 18], [-40, 24], [42, 20], [50, 14]]) g.add(at(box(7, h, 7, '#e9eef3'), x, 0, -6), at(box(7.2, h * 0.5, 6, '#69b4e6'), x, h * 0.3, -6));
+  return g;
+}
+
 // ------------------------------------------------------------------ 수원
 
 // 돌 육축에 무지개문 1개 · 2층 기와 문루 · 앞쪽 반원 옹성 · 성벽 위 여장
@@ -270,7 +280,7 @@ function bg_shipyard() {
 }
 
 export const KR2 = {
-  busan_haeundae, busan_gamcheon, busan_tower, busan_gwanganbridge,
+  busan_haeundae, busan_gamcheon, busan_tower, busan_gwanganbridge, thumb_gwangalli,
   suwon_janganmun, suwon_gongsimdon, suwon_hwahongmun, suwon_haenggung,
   ulsan_bamboo, ulsan_bridge, ulsan_daewangam, ulsan_ganjeolgot,
   gyeongju_daereungwon, gyeongju_cheomseongdae, gyeongju_wolji, gyeongju_bulguksa,

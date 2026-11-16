@@ -1,5 +1,6 @@
 // App glue: screens, settings, race loop, HUD, friend rooms.
 import { COUNTRIES, cityById, citiesOf } from './cities.js';
+import { fitMap, PIN_R } from './maps.js';
 import { CHARS, charById, faceURL, clearSprites } from './sprites.js';
 import { Renderer } from './render.js';
 import { Race, buildTrack } from './game.js';
@@ -110,14 +111,25 @@ function renderSetup() {
     pickCountry = v;
     if (cur.country !== v) setConfig({ course: citiesOf(v)[0].id }); else renderSetup();
   });
-  $('#courses').replaceChildren(...citiesOf(pickCountry).map((c) => {
-    const b = el('button', 'card' + (c.id === cur.id ? ' sel' : ''));
+  // the country's real map; each city is a round picture of its landmark at its true place
+  const map = fitMap(pickCountry), box = $('#courses'), cities = citiesOf(pickCountry);
+  const pct = (v, total) => `${((v / total) * 100).toFixed(2)}%`;
+  box.style.setProperty('--ratio', (map.w / map.h).toFixed(3));
+  box.innerHTML = `<svg viewBox="0 0 ${map.w.toFixed(1)} ${map.h}" aria-hidden="true">`
+    + map.polys.map((p) => `<polygon class="land" points="${p.map((q) => q.map((v) => v.toFixed(1)).join(',')).join(' ')}"/>`).join('')
+    + cities.map((c) => { const a = map.pos(c.geo[0], c.geo[1]), b = map.pin(c); return `<line class="lead" x1="${a[0].toFixed(1)}" y1="${a[1].toFixed(1)}" x2="${b[0].toFixed(1)}" y2="${b[1].toFixed(1)}"/><circle class="dot" cx="${a[0].toFixed(1)}" cy="${a[1].toFixed(1)}" r="1.6"/>`; }).join('')
+    + '</svg>';
+  box.append(...cities.map((c) => {
+    const p = map.pin(c), b = el('button', 'pin' + (c.id === cur.id ? ' sel' : ''));
+    b.style.left = pct(p[0], map.w); b.style.top = pct(p[1], map.h); b.style.width = pct(PIN_R * 2, map.w);
+    b.title = c.name;
     const img = el('img'); img.alt = '';
-    renderer?.thumb(c.id).then((url) => { img.src = url; });
+    renderer?.thumb(c.id).then((url) => { if (url) img.src = url; });
     b.append(img, el('span', '', c.name));
     b.onclick = () => { sound.unlock(); sound.sfx('click'); setConfig({ course: c.id }); };
     return b;
   }));
+  $('#city-name').textContent = cur.country === pickCountry ? cur.name : '';
   chips('#npcs', [0, 1, 2, 3, 4, 5].map((n) => [n, n ? String(n) : '없음']), config.npc, (v) => setConfig({ npc: v }));
   chips('#diffs', [[0, '느긋하게'], [1, '비슷하게'], [2, '빠르게']], config.diff, (v) => setConfig({ diff: v }));
   chips('#lens', [[200, '200m'], [400, '400m'], [800, '800m']], config.len, (v) => setConfig({ len: v }));
