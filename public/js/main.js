@@ -4,7 +4,7 @@ import { fitMap, PIN_R } from './maps.js';
 import { CHARS, charById, faceURL, clearSprites } from './sprites.js';
 import { Renderer } from './render.js';
 import { Race, buildTrack } from './game.js';
-import { SpeedInput, BikeSensor } from './input.js';
+import { SpeedInput } from './input.js';
 import { Sound } from './audio.js';
 import { Net } from './net.js';
 
@@ -16,10 +16,12 @@ const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
 // ---------- persistent settings ----------
 const S = {
   name: '', char: 'bunny', course: 'seoul', npc: 3, diff: 1, len: 400,
-  inputMode: 'auto', autoKmh: 6, maxKmh: 20, wheel: 960, vis: 2, music: true, sfx: true,
+  inputMode: 'auto', autoKmh: 6, maxKmh: 20, vis: 2, music: true, sfx: true,
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem('lrb') || '{}')); } catch { /* first run */ }
 S.course = cityById(S.course).id; // old saved course ids fall back to Seoul
+if (S.inputMode !== 'push') S.inputMode = 'auto'; // the wheel sensor mode was removed
+delete S.wheel;
 // top speed is 20 km/h; settings saved before that (old default 12, old limit 25) move to 20
 const MAX_KMH = 20;
 if ((S.v || 0) < 2) { S.maxKmh = MAX_KMH; S.v = 2; }
@@ -27,8 +29,7 @@ S.maxKmh = Math.min(MAX_KMH, S.maxKmh); S.autoKmh = Math.min(S.autoKmh, S.maxKmh
 const save = () => { try { localStorage.setItem('lrb', JSON.stringify(S)); } catch { /* private mode */ } };
 
 // ---------- core objects ----------
-const sensor = new BikeSensor();
-const input = new SpeedInput(sensor);
+const input = new SpeedInput();
 const sound = new Sound();
 const net = new Net();
 let renderer;
@@ -48,7 +49,6 @@ let screen = 'home';
 
 function applySettings() {
   input.mode = S.inputMode; input.autoKmh = S.autoKmh; input.maxKmh = S.maxKmh;
-  sensor.circ = S.wheel / 1000;
   sound.musicOn = S.music; sound.sfxOn = S.sfx;
 }
 
@@ -159,36 +159,19 @@ function openSetup(m) {
 
 // ---------- settings ----------
 const MODE_HELP = {
-  auto: '센서가 없을 때: 정한 속도로 화면이 계속 달려요. 달리는 중 ↑↓ 키로 속도 조절, 스페이스바로 멈춤/출발.',
+  auto: '정한 속도로 화면이 계속 달려요. 달리는 중 ↑↓ 키로 속도 조절, 스페이스바로 멈춤/출발.',
   push: '화면이나 스페이스바를 꾹 누르고 있는 동안 달려요. 부모님이 아이 발 구르기에 맞춰 눌러 주세요.',
-  sensor: '뒷바퀴에 단 블루투스 속도 센서(CSC)의 실제 속도로 달려요. 크롬/엣지 브라우저에서 "센서 연결"을 눌러 주세요.',
 };
 function renderSettings() {
   const set = (k, v) => { S[k] = v; save(); applySettings(); renderSettings(); };
-  chips('#set-mode', [['auto', '자동 속도'], ['push', '눌러서 달리기'], ['sensor', '바퀴 센서']], S.inputMode, (v) => set('inputMode', v));
+  chips('#set-mode', [['auto', '자동 속도'], ['push', '눌러서 달리기']], S.inputMode, (v) => set('inputMode', v));
   $('#mode-help').textContent = MODE_HELP[S.inputMode];
   $('#v-autoKmh').textContent = `${S.autoKmh} km/h`;
   $('#v-maxKmh').textContent = `${S.maxKmh} km/h`;
   chips('#set-vis', [[1, '1배'], [1.5, '1.5배'], [2, '2배'], [3, '3배']], S.vis, (v) => set('vis', v));
-  chips('#set-wheel', [[800, '10인치'], [960, '12인치'], [1120, '14인치']], S.wheel, (v) => set('wheel', v));
   chips('#set-music', [[true, '음악 켜기'], [false, '음악 끄기']], S.music, (v) => set('music', v));
   chips('#set-sfx', [[true, '효과음 켜기'], [false, '효과음 끄기']], S.sfx, (v) => set('sfx', v));
-  renderSensor();
 }
-function renderSensor() {
-  const txt = !sensor.supported ? '이 브라우저는 블루투스를 지원하지 않아요 (크롬/엣지 권장)'
-    : sensor.connected ? `연결됨 · 지금 ${(sensor.current * 3.6).toFixed(1)} km/h` : '연결 안 됨';
-  $('#sensor-status').textContent = txt;
-  $('#btn-sensor').disabled = !sensor.supported;
-  $('#btn-sensor2').textContent = sensor.connected ? '센서 연결됨' : '센서 연결';
-}
-async function connectSensor() {
-  if (!sensor.supported) return toast('이 브라우저는 블루투스를 지원하지 않아요. 크롬이나 엣지를 써 주세요.');
-  try { await sensor.connect(); toast('센서가 연결됐어요!'); }
-  catch (e) { if (e.name !== 'NotFoundError') toast('센서 연결에 실패했어요.'); }
-}
-sensor.onchange = renderSensor;
-window.setBikeSpeed = (kmh) => sensor.external(kmh); // hook for custom sensors
 
 // ---------- race ----------
 function startRace({ cfg, seed, players, myId, sim }) {
@@ -201,7 +184,6 @@ function startRace({ cfg, seed, players, myId, sim }) {
   $('#hud').hidden = false;
   $('#ctrl-auto').hidden = S.inputMode !== 'auto';
   $('#ctrl-push').hidden = S.inputMode !== 'push';
-  $('#ctrl-sensor').hidden = S.inputMode !== 'sensor';
   $('#btn-go').textContent = '멈춤';
   $('#star-n').textContent = '0';
   buildPins();
@@ -353,8 +335,6 @@ tap('#btn-join', async () => {
   if (await netConnect()) net.send({ t: 'join', room: code, ...myProfile() });
 });
 tap('#btn-start', () => (mode === 'host' ? net.send({ t: 'start' }) : soloStart()));
-tap('#btn-sensor', connectSensor);
-tap('#btn-sensor2', connectSensor);
 tap('#btn-pause', () => { paused = true; if (mode === 'solo') sound.stopMusic(); show('pause'); });
 tap('#btn-resume', () => { paused = false; show('none'); if (mode === 'solo' && race) sound.startMusic(race.city.tune); });
 tap('#btn-quit', goHome);
@@ -425,7 +405,6 @@ function frame(now) {
     if (demo.z > demo.track.finish - 40) demo.z = 0;
     const camPos = demoFixed ? demo.track.start + demoFixed.at * demo.track.units + (demoFixed.go ? (t * 4) % 30 : 0) : 38 + demo.z;
     renderer?.render({ city, track: demo.track, camPos, items: [], t, speed01: 0 });
-    if ((uiAcc += dt) > 0.5) { uiAcc = 0; if (screen === 'settings') renderSensor(); }
   }
 }
 function drawConfetti(dt) {
