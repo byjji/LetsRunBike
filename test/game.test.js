@@ -30,6 +30,17 @@ test('명소 통과 이벤트 4번, 순서대로', () => {
   for (let i = 0; i < 4000; i++) race.update(0.05, 3);
   assert.deepEqual(got, city.landmarks.map((l) => l.name));
 });
+for (const [diff, lo, hi] of [[0, 5, 10], [1, 10, 15], [2, 14, 18]]) test(`동물 친구 빠르기 ${diff}: ${lo}~${hi} km/h`, () => {
+  const race = new Race({ city: cityById('seoul'), lengthM: 5000, npc: 5, diff, seed: 3, vis: 2, players: [{ id: 'me', name: 'a', char: 'bunny' }], myId: 'me', sim: true });
+  race.on = () => {};
+  for (let i = 0; i < 2400; i++) {
+    race.update(0.05, i % 400 < 200 ? 0 : 5.5);   // child stops and goes: friends keep their own pace
+    if (race.clock > 8) for (const n of race.npcs) {
+      const kmh = n.speed * 3.6;
+      assert.ok(kmh >= lo - 0.01 && kmh <= hi + 0.01, `${kmh.toFixed(2)} km/h`);
+    }
+  }
+});
 test('실제 지도 코스: 봉담은 에듀파크에서 수영로, 효행로로 오른쪽으로 꺾인다', () => {
   const c = cityById('bongdam'), t = buildTrack(c, 400, 2.3, 7), p = buildPath(t.segs);
   const yawAt = (f) => p.yaw[t.start + Math.round(f * t.units)];

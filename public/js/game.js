@@ -5,7 +5,7 @@ import { CHARS, charById } from './sprites.js';
 
 const PAD = 30;               // segments before the start line
 const BASE_UPM = 1.15;        // world units per real metre at 1x speed feel
-const DIFF = [[0.78, 0.98], [0.9, 1.1], [1.0, 1.18]]; // NPC speed relative to the child
+const DIFF = [[5, 10], [10, 15], [14, 18]]; // NPC speed range in km/h per difficulty
 
 export function rng(seed) {
   let a = seed >>> 0;
@@ -84,7 +84,6 @@ export class Race {
     this.clock = -4;
     this.lastCount = 0;
     this.started = false;
-    this.ref = 0;
     this.starCount = 0;
     this.maxSpeed = 0;
     this.hundreds = 0;
@@ -103,7 +102,7 @@ export class Race {
       const ch = pool[k % pool.length];
       this.riders.push({
         id: 'npc' + k, kind: 'npc', name: ch.name, ch, dist: 0, speed: 0, phase: r() * 6, fin: 0, nd: 0, nv: 0,
-        f: lo + r() * (hi - lo), w: r() * 6, wf: 0.2 + r() * 0.3,
+        lo: lo / 3.6, hi: hi / 3.6, f: r(), w: r() * 6, wf: 0.2 + r() * 0.3,
       });
     }
     this.me = this.riders.find((x) => x.kind === 'me');
@@ -140,19 +139,14 @@ export class Race {
     else me.speed = inputSpeed;
     me.dist += me.speed * dt;
     this.maxSpeed = Math.max(this.maxSpeed, me.speed);
-    if (!me.fin) this.ref += (me.speed - this.ref) * Math.min(1, dt * 0.8);
-    else this.ref = Math.max(this.ref, 1.3);
 
     for (const r of this.riders) {
       if (r.kind === 'npc' && this.sim) {
         let v = 0;
         if (this.started) {
-          v = Math.max(0, this.ref * r.f + Math.sin(this.clock * r.wf + r.w) * 0.18 * Math.min(1, this.ref));
-          if (!me.fin) { // rubber band: friends wait ahead and catch up from behind
-            const gap = r.dist - me.dist;
-            if (gap > 8) v *= Math.max(0, 1 - (gap - 8) / 8);
-            else if (gap < -4) v = Math.max(v, this.ref + 0.6 * Math.min(1, (-gap - 4) / 4));
-          }
+          // own pace inside the difficulty range (km/h), drifting slowly up and down
+          const k = Math.min(1, Math.max(0, r.f + Math.sin(this.clock * r.wf + r.w) * 0.3));
+          v = r.lo + (r.hi - r.lo) * k;
           if (r.fin) v = r.speed * Math.max(0, 1 - dt * 0.7);
         }
         r.speed += (v - r.speed) * Math.min(1, dt * 1.5);
