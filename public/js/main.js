@@ -16,10 +16,14 @@ const fmtTime = (s) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(
 // ---------- persistent settings ----------
 const S = {
   name: '', char: 'bunny', course: 'seoul', npc: 3, diff: 1, len: 400,
-  inputMode: 'auto', autoKmh: 6, maxKmh: 12, wheel: 960, vis: 2, music: true, sfx: true,
+  inputMode: 'auto', autoKmh: 6, maxKmh: 20, wheel: 960, vis: 2, music: true, sfx: true,
 };
 try { Object.assign(S, JSON.parse(localStorage.getItem('lrb') || '{}')); } catch { /* first run */ }
 S.course = cityById(S.course).id; // old saved course ids fall back to Seoul
+// top speed is 20 km/h; settings saved before that (old default 12, old limit 25) move to 20
+const MAX_KMH = 20;
+if ((S.v || 0) < 2) { S.maxKmh = MAX_KMH; S.v = 2; }
+S.maxKmh = Math.min(MAX_KMH, S.maxKmh); S.autoKmh = Math.min(S.autoKmh, S.maxKmh);
 const save = () => { try { localStorage.setItem('lrb', JSON.stringify(S)); } catch { /* private mode */ } };
 
 // ---------- core objects ----------
@@ -255,8 +259,10 @@ function updateHud() {
 }
 function renderResult() {
   if (!race) return;
-  const order = race.rank(), medals = ['🥇', '🥈', '🥉'];
-  $('#result-list').replaceChildren(...order.map((r, i) => {
+  const order = race.rank(), medals = ['🥇', '🥈', '🥉'], list = $('#result-list');
+  list.classList.toggle('two', order.length > 6);
+  list.style.setProperty('--n', Math.ceil(order.length / 2));
+  list.replaceChildren(...order.map((r, i) => {
     const row = el('div', 'result-row' + (r === race.me ? ' me' : ''));
     const img = el('img'); img.src = faceURL(r.ch); img.alt = '';
     row.append(el('span', 'medal', r.fin ? medals[i] || `${i + 1}` : '🚲'), img, el('span', 'nm', r.name),
@@ -360,7 +366,7 @@ tap('#btn-again', () => {
 document.querySelectorAll('[data-back]').forEach((b) => b.addEventListener('click', goHome));
 document.querySelectorAll('[data-step]').forEach((b) => b.addEventListener('click', () => {
   const k = b.dataset.step;
-  S[k] = clamp(S[k] + +b.dataset.d, k === 'autoKmh' ? 1 : 6, k === 'autoKmh' ? S.maxKmh : 25);
+  S[k] = clamp(S[k] + +b.dataset.d, k === 'autoKmh' ? 1 : 6, k === 'autoKmh' ? S.maxKmh : MAX_KMH);
   S.autoKmh = Math.min(S.autoKmh, S.maxKmh);
   save(); applySettings(); renderSettings();
 }));
@@ -406,7 +412,7 @@ function frame(now) {
 
   if (race) {
     if (!(paused && mode === 'solo')) race.update(dt, input.update(dt));
-    renderer?.render(race.scene(t, S.maxKmh / 3.6));
+    renderer?.render(race.scene(t, S.maxKmh / 3.6));   // scene.kmh drives the speed effect from 12 km/h
     if (!$('#hud').hidden) updateHud();
     if (room && (netAcc += dt) > 0.1) { netAcc = 0; net.send(race.netState()); }
     if ((uiAcc += dt) > 0.5) { uiAcc = 0; if (screen === 'result') renderResult(); }

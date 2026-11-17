@@ -79,11 +79,16 @@ export class World {
       const c = C(hex);
       for (let k = 0; k < 6; k++) col.push(c.r, c.g, c.b);
     };
-    const n = path.n, ec = city.edge, FAR = 8;
-    const curb = '#' + new THREE.Color(city.road[0]).lerp(new THREE.Color(0xffffff), 0.55).getHexString();
+    const n = path.n, FAR = 8;
+    const lighter = (hex) => '#' + new THREE.Color(hex).lerp(new THREE.Color(0xffffff), 0.55).getHexString();
+    // parts of the course may have their own surface (e.g. a dirt path through a forest): city.paths
+    const plain = { road: city.road, edge: city.edge, curb: lighter(city.road[0]), lanes: city.lanes };
+    const looks = (city.paths || []).map((p) => ({ ...p, curb: p.curb || lighter(p.road[0]), lanes: p.lanes ?? 0 }));
+    const lookAt = (i) => { const u = (i - track.start) / track.units; return looks.find((p) => u >= p.from && u < p.to) || plain; };
     for (let i = 0; i < n; i++) {
       const alt = Math.floor(i / 3) & 1, bridge = onBridge(i), seg = track.segs[i];
-      quad(i, i + 1, -RW, RW, city.road[alt]);
+      const look = lookAt(i), ec = look.edge, curb = look.curb;
+      quad(i, i + 1, -RW, RW, look.road[alt]);
       for (const side of [-1, 1]) {
         const water = city.sides[side < 0 ? 'left' : 'right'] === 'water';
         quad(i, i + 1, side * RW, side * (RW + 0.4), ec[Math.floor(i / 2) % ec.length]);
@@ -97,8 +102,8 @@ export class World {
           if (j > i) quad(i, j, side * 60, side * 900, city.ground[0]);
         } else if (onBridge(i - (i % FAR))) quad(i, i + 1, side * 60, side * 900, city.ground[0]);
       }
-      if (city.lanes && alt === 0) {
-        for (let k = 1; k <= city.lanes; k++) { const lx = -RW + (2 * RW * k) / (city.lanes + 1); quad(i, i + 1, lx - 0.07, lx + 0.07, '#ffffff', 0.015, 0.015); }
+      if (look.lanes && alt === 0) {
+        for (let k = 1; k <= look.lanes; k++) { const lx = -RW + (2 * RW * k) / (look.lanes + 1); quad(i, i + 1, lx - 0.07, lx + 0.07, '#ffffff', 0.015, 0.015); }
       }
       if (seg.line === 1) quad(i, i + 1, -RW, RW, '#ffffff', 0.02, 0.02);
       else if (seg.line >= 2) {

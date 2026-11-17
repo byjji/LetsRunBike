@@ -9,7 +9,7 @@ for (const c of CITIES) for (const len of [50, 200, 400, 800, 3000]) for (const 
   test(`배치: ${c.id} ${len}m x${vis}`, () => {
     const upm = 1.15 * vis, units = Math.round(len * upm);
     const t = buildTrack(c, len, upm, 99), L = layoutCity(c, t, units, 99);
-    if (len >= 200) assert.equal(L.landmarks.length, 4);
+    if (len >= 200) assert.equal(L.landmarks.length, c.landmarks.length);
     const zones = L.landmarks.map((m) => [m.s - Math.max(m.span / 2, 10), m.s + Math.max(m.span / 2, 10)]);
     zones.forEach((z, i) => { if (i) assert.ok(z[0] >= zones[i - 1][1], '명소 겹침'); });
     for (const m of L.landmarks.filter((m) => m.def.through)) {

@@ -11,6 +11,7 @@ const CAM_BACK = 6.5;       // camera distance behind the player
 const CAM_H = 3.6;          // camera height
 const LOOK_AHEAD = 12;
 const FOV = 60;
+const SPEEDY_KMH = 12;      // the speed effect starts here
 const FONT = '"Jua", "Malgun Gothic", sans-serif';
 const _a = {}, _b = {}, _v = new THREE.Vector3();
 
@@ -62,15 +63,21 @@ export class Renderer {
     sample(world.path, camPos + LOOK_AHEAD, camX * 0.5, _b);
     cam.position.set(_a.x, CAM_H, _a.z);
     cam.lookAt(_b.x, 1.1, _b.z);
-    const fov = FOV + Math.max(0, (speed01 - 0.45) / 0.55) * 8;   // faster → wider view
+    // speed feel from 12 km/h up to 20: slightly wider view and soft streaks at the screen edges.
+    // Kept mild on purpose (a toddler watches): no shake, no flashing, eased in and out.
+    const boost = Math.min(1, Math.max(0, ((scene.kmh ?? speed01 * 12) - SPEEDY_KMH) / 8));
+    this.boost = (this.boost || 0) + (boost - (this.boost || 0)) * Math.min(1, dt * 1.5);
+    const fov = FOV + this.boost * 6;
     this.fov += (fov - this.fov) * Math.min(1, dt * 3);
     if (Math.abs(cam.fov - this.fov) > 0.01) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
 
     this.gl.render(world.scene, cam);
 
-    // overlay: name tags above riders
     const g = this.g;
     g.clearRect(0, 0, this.W, this.H);
+    if (this.boost > 0.02) this.streaks(t, this.boost);
+
+    // overlay: name tags above riders
     for (const l of world.labels) {
       _v.set(l.x, l.y, l.z).project(cam);
       if (_v.z > 1 || _v.z < -1) continue;
@@ -78,6 +85,27 @@ export class Renderer {
       const ppu = this.H / (2 * Math.tan((cam.fov * Math.PI) / 360) * Math.max(1, d));
       if (ppu > 14) this.tag((_v.x * 0.5 + 0.5) * this.W, (-_v.y * 0.5 + 0.5) * this.H, ppu, l, t);
     }
+  }
+
+  /** Soft white wind streaks rushing past the edges of the screen; k = 0..1 strength. Centre stays clear. */
+  streaks(t, k) {
+    const g = this.g, W = this.W, H = this.H, cx = W / 2, cy = H * 0.42, R = Math.hypot(W, H) / 2;
+    const frac = (v) => v - Math.floor(v), hash = (i) => frac(Math.sin(i * 91.7 + 1.3) * 43758.5453);
+    g.save();
+    g.lineCap = 'round';
+    const n = Math.round(10 + k * 14);
+    for (let i = 0; i < n; i++) {
+      const a = hash(i) * Math.PI * 2, u = frac(t * (0.9 + hash(i + 7) * 0.5) + hash(i + 3));
+      const r0 = R * (0.5 + u * 0.55), len = R * (0.08 + k * 0.1);
+      const fade = Math.sin(u * Math.PI);                       // appear and vanish smoothly
+      g.strokeStyle = `rgba(255,255,255,${(0.12 + 0.26 * k) * fade})`;
+      g.lineWidth = Math.max(2, H * 0.005);
+      g.beginPath();
+      g.moveTo(cx + Math.cos(a) * r0, cy + Math.sin(a) * r0 * 0.75);
+      g.lineTo(cx + Math.cos(a) * (r0 + len), cy + Math.sin(a) * (r0 + len) * 0.75);
+      g.stroke();
+    }
+    g.restore();
   }
 
   tag(x, y, ppu, it, t) {

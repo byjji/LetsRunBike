@@ -150,10 +150,12 @@ input:focus { border-color: var(--orange); }
 
 /* ---------- result ---------- */
 .result-list { display: flex; flex-direction: column; gap: .35rem; align-self: stretch; min-width: 24rem; }
-.result-row { display: flex; align-items: center; gap: .8rem; background: #fff; border-radius: 1rem; padding: .15rem .9rem; font-size: 1.35rem; }
+/* many riders: two columns, filled top-down so 1st..Nth reads down the left column first */
+.result-list.two { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: repeat(var(--n), auto); grid-auto-flow: column; gap: .35rem .6rem; min-width: min(44rem, 100%); }
+.result-row { display: flex; align-items: center; gap: .8rem; background: #fff; border-radius: 1rem; padding: .15rem .9rem; font-size: min(1.35rem, 3.6vh); white-space: nowrap; }
 .result-row.me { background: #fff1c2; }
-.result-row .medal { width: 2.4rem; text-align: center; font-size: 1.6rem; }
-.result-row img { width: 2.8rem; height: 2.8rem; }
+.result-row .medal { width: 2.4rem; text-align: center; font-size: min(1.6rem, 4.2vh); }
+.result-row img { width: min(2.8rem, 6.6vh); height: min(2.8rem, 6.6vh); }
 .result-row .nm { flex: 1; }
 .result-row .tm { opacity: .7; }
 .stats { display: flex; gap: .6rem; flex-wrap: wrap; justify-content: center; }

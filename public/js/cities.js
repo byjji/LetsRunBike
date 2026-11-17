@@ -10,7 +10,7 @@ export const COUNTRIES = [
   { id: 'us', name: '미국', flag: '🇺🇸' },
 ];
 
-const AT = [0.2, 0.4, 0.6, 0.85];
+const AT = [0.2, 0.4, 0.6, 0.85];   // where landmarks stand (0..1 of the course) unless an entry gives its own `at`
 // landmark beside the road: side -1 = left, 1 = right, offset = distance from the road edge, h = height on screen
 const beside = (id, name, side, offset, h, features, extra = {}) => ({ id, name, side, offset, h, through: false, span: 0, features, ...extra });
 // landmark the road passes through / over
@@ -19,18 +19,26 @@ const through = (id, name, span, features, extra = {}) => ({ id, name, side: 0, 
 const FILL = { land: ['grass', 'grass', 'flowers', 'pebbles'], snow: ['snowpile', 'snowpile', 'pebbles'], sand: ['pebbles', 'shell', 'grass'], water: ['pebbles', 'grass'] };
 // the land beyond the roadside: `far` fills 24–75 units out, `deep` (cheap, bigger shapes) 75–190 units out
 const HILL = { land: 'hill', sand: 'hill', snow: 'snowhill' };
+// zones: [{ to, far, deep }] = different land along parts of the course (0 = start, 1 = finish); after the last one c.far / c.deep
 const scenery = (c, side) => {
   const kind = c.sides[side < 0 ? 'left' : 'right'];
   if (kind === 'water') return [];
-  return [
-    { n: c.far, p: 0.5, min: 24, max: 75, r: 6, side },
-    { n: [...c.deep, HILL[kind]], p: 0.55, min: 75, max: 190, r: 9, scale: 1.5, side },
-  ];
+  const parts = [];
+  let from = -9;
+  for (const z of [...(c.zones || []), { to: 99, far: c.far, deep: c.deep }]) {
+    const span = z.to === 99 && from === -9 ? {} : { from, to: z.to };
+    parts.push(
+      { n: z.far, p: 0.5, min: 24, max: 75, r: 6, side, ...span },
+      { n: [...z.deep, HILL[kind]], p: 0.55, min: 75, max: 190, r: 9, scale: 1.5, side, ...span },
+    );
+    from = z.to;
+  }
+  return parts;
 };
 const city = (c) => ({
   lanes: 0, ...c,
   roadside: [...c.roadside, ...[-1, 1].map((side) => ({ n: FILL[c.sides[side < 0 ? 'left' : 'right']], p: 0.3, min: 1.0, max: 15, side })), ...scenery(c, -1), ...scenery(c, 1)],
-  landmarks: c.landmarks.map((l, i) => ({ ...l, at: AT[i] })),
+  landmarks: c.landmarks.map((l, i) => ({ ...l, at: l.at ?? AT[i] })),
 });
 
 const WIND = { type: 'wind' }, CROWD = { type: 'crowd' };
@@ -43,7 +51,7 @@ const BUTTERFLIES = { type: 'butterflies' };
 export const CITIES = [
   // ------------------------------------------------------------------ 한국
   city({
-    id: 'seoul', geo: [37.57, 126.98], pin: [-24, -12], country: 'kr', name: '서울', tune: 0, hero: 'seoul_ntower',
+    id: 'seoul', geo: [37.57, 126.98], pin: [-25, -26], country: 'kr', name: '서울', tune: 0, hero: 'seoul_ntower',
     sky: ['#58b8ff', '#d8f1ff'], fog: '#d8f1ff', ground: ['#93d36a', '#89cb60'], road: ['#b9bcc6', '#b0b3be'], edge: ['#ffffff', '#ffd23f'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -85,7 +93,7 @@ export const CITIES = [
     ambient: [WIND, CROWD, birds('gull'), mover('boat', -40, 5, 16), mover('ferry', -70, 4, 40), mover('gondola', -22, 5, 12, { y: 14 }), floater('waves')],
   }),
   city({
-    id: 'suwon', geo: [37.26, 127.03], pin: [-26, 20], country: 'kr', name: '수원', tune: 3, hero: 'suwon_janganmun',
+    id: 'suwon', geo: [37.26, 127.03], pin: [-30, 2], country: 'kr', name: '수원', tune: 3, hero: 'suwon_janganmun',
     sky: ['#62c0ff', '#e2f5ff'], fog: '#e2f5ff', ground: ['#8fd067', '#86c85e'], road: ['#d8c9a8', '#cfc09e'], edge: ['#f6efe0', '#a8703f'],
     sides: { left: 'land', right: 'land' },
     landmarks: [
@@ -143,6 +151,65 @@ export const CITIES = [
       { n: ['mound'], p: 0.02, min: 22, max: 50 },
     ],
     ambient: [WIND, CROWD, BUTTERFLIES, birds('magpie'), particles('petal'), floater('kiteflyer', { lateral: -14 })],
+  }),
+
+  // 화성: the family's home town, split into two neighbourhoods
+  city({
+    id: 'bongdam', geo: [37.231, 126.946], pin: [-29, 33], country: 'kr', name: '화성 봉담', tune: 0, hero: 'bongdam_yunggeonneung', thumb: 'thumb_yunggeon',
+    sky: ['#5fbcff', '#e0f4ff'], fog: '#e0f4ff', ground: ['#8fd067', '#86c85e'], road: ['#b9bcc6', '#b0b3be'], edge: ['#ffffff', '#ffd23f'],
+    sides: { left: 'land', right: 'land' }, lanes: 1,
+    // the real way from home to 융건릉 (OpenStreetMap / OSRM, 6 km squeezed into the course):
+    // start at 중흥S클래스 에듀파크 on 상리2길 (봉담2지구), right onto 수영로 heading east, right onto 효행로 heading south-east
+    route: [[0.04, -0.35], [0.09, 0.3], [0.13, -0.9], [0.26, 0.35], [0.31, -0.9], [0.39, -0.7], [0.48, 0.35], [0.66, 0.2], [0.74, -0.3], [0.86, 0.25]],
+    landmarks: [
+      beside('bongdam_edupark', '중흥S클래스 에듀파크', 1, 14, 30, ['25층 아파트 여러 동', '단지 정문과 놀이터', '정문 앞 버스정류장', '단지 앞 가로수길'], { at: 0.05 }),
+      through('bongdam_yunggeonneung', '융건릉', 10, ['붉은 나무 기둥 2개와 가로대', '위쪽에 촘촘한 붉은 살', '가운데 태극 문양', '숲길 입구 양옆 소나무'], { at: 0.56 }),
+      beside('bongdam_yungneung', '융릉', -1, 22, 16, ['언덕 위 둥근 봉분', '봉분 둘레 병풍석과 난간석', '문인석·무인석과 석마', '아래 정자각과 홍살문'], { at: 0.68, clearing: 28 }),
+      beside('bongdam_geonneung', '건릉', 1, 22, 16, ['언덕 위 둥근 봉분(병풍석 없음)', '봉분 둘레 난간석', '석양·석호와 문인석·무인석', '뒤를 감싸는 곡장 담', '아래 정자각'], { at: 0.8, clearing: 28 }),
+      beside('bongdam_yongjusa', '용주사', -1, 20, 16, ['2층 누각 천보루', '대웅보전 기와 전각', '앞마당 5층 석탑', '돌담과 솔숲'], { at: 0.92 }),
+    ],
+    backdrop: [{ id: 'bg_aptline', bearing: 40, dist: 540 }, { id: 'bg_hills', bearing: -50, dist: 520 }],
+    // 융건릉 숲길: past the red gate the road turns into a dirt path between tall pines, passes 융릉 and 건릉, then back out to 효행로
+    paths: [{ from: 0.555, to: 0.87, road: ['#c9a676', '#c19e6d'], edge: ['#b08d5f'], curb: '#a8b86e' }],
+    zones: [{ to: 0.3, far: ['apt', 'apt', 'office', 'apt', 'woods'], deep: ['block', 'apt', 'woods'] }, { to: 0.55, far: ['woods_pine', 'woods', 'hanok', 'woods_pine'], deep: ['woods_pine', 'woods'] }, { to: 0.87, far: ['woods_pine', 'woods_pine', 'woods_pine'], deep: ['woods_pine', 'woods_pine', 'woods'] }],
+    far: ['woods_pine', 'woods_pine', 'woods', 'woods_pine', 'hanok'], deep: ['woods_pine', 'woods', 'woods_pine'],
+    roadside: [
+      // 봉담2지구 (상리2길, 수영로): apartments and street trees
+      { n: ['apt', 'apt'], p: 0.1, min: 12, max: 30, from: -9, to: 0.3 },
+      { n: ['ginkgo', 'tree'], p: 0.22, min: 1.8, max: 3, from: -9, to: 0.3 },
+      { n: ['lamp'], p: 0.06, min: 1.4, max: 1.8, from: -9, to: 0.3 },
+      // 효행로: trees along the road
+      { n: ['pine', 'pine', 'tree'], p: 0.2, min: 2.4, max: 22, from: 0.3, to: 0.555 },
+      { n: ['pine', 'pine', 'tree'], p: 0.2, min: 2.4, max: 22, from: 0.87, to: 99 },
+      { n: ['wall_kr'], p: 0.03, min: 9, max: 18, from: 0.87, to: 99 },
+      { n: ['lamp'], p: 0.025, min: 1.4, max: 1.8, from: 0.3, to: 0.54 },
+      { n: ['lamp'], p: 0.025, min: 1.4, max: 1.8, from: 0.87, to: 99 },
+      // 융건릉 숲길: tall pines close on both sides
+      { n: ['pine_tall'], p: 0.65, min: 1.6, max: 9, from: 0.555, to: 0.87 },
+      { n: ['pine_tall', 'pine_tall', 'pine'], p: 0.45, min: 9, max: 24, from: 0.555, to: 0.87 },
+      { n: ['bush', 'flowers', 'grass'], p: 0.12, min: 1.5, max: 9 },
+    ],
+    ambient: [WIND, CROWD, birds('magpie'), BUTTERFLIES, floater('kiteflyer', { lateral: -16 }), particles('leaf')],
+  }),
+  city({
+    id: 'dongtan', geo: [37.2, 127.07], pin: [27, -22], country: 'kr', name: '화성 동탄', tune: 3, hero: 'dongtan_lakepark', thumb: 'thumb_dongtan',
+    sky: ['#55b6ff', '#dcf2ff'], fog: '#dcf2ff', ground: ['#92d36b', '#88cb61'], road: ['#b9bcc6', '#b0b3be'], edge: ['#ffffff', '#59c3ff'],
+    sides: { left: 'land', right: 'land' }, lanes: 1,
+    landmarks: [
+      beside('dongtan_centralpark', '동탄 센트럴파크', -1, 18, 14, ['넓은 잔디밭', '둥근 광장과 바닥분수', '나무 그늘 산책길', '뒤로 낮은 반석산']),
+      beside('dongtan_metapolis', '메타폴리스', 1, 26, 48, ['유리 초고층 4동', '꼭대기 비스듬한 왕관 지붕', '아래 낮은 쇼핑몰', '파란·은색 유리']),
+      beside('dongtan_station', '동탄역', -1, 22, 16, ['길고 낮은 유리 지붕 역 입구', '역 이름 간판', '앞 광장과 버스', '뒤 고층 빌딩']),
+      through('dongtan_lakepark', '동탄호수공원', 70, ['호수를 가로지르는 데크 다리', '물 위로 솟는 음악분수', '둥근 루나 조형물', '호숫가 산책길과 오리배'], { bridge: true }),
+    ],
+    backdrop: [{ id: 'bg_aptline', bearing: 35, dist: 540 }, { id: 'bg_aptline', bearing: -45, dist: 580 }],
+    far: ['apt', 'apt', 'office', 'woods', 'apt', 'skyscraper'], deep: ['block', 'apt', 'block', 'woods'],
+    roadside: [
+      { n: ['ginkgo', 'tree', 'tree'], p: 0.18, min: 1.8, max: 3 },
+      { n: ['apt', 'apt', 'office'], p: 0.07, min: 14, max: 40 },
+      { n: ['lamp'], p: 0.05, min: 1.4, max: 1.8 },
+      { n: ['bush', 'flowers'], p: 0.12, min: 1.5, max: 8 },
+    ],
+    ambient: [WIND, CROWD, birds('pigeon'), BUTTERFLIES, mover('srt', -34, 30, 14), mover('duckboat', 26, 3, 24, { onlyThrough: 'dongtan_lakepark' }), floater('fountain')],
   }),
 
   // ------------------------------------------------------------------ 일본

@@ -32,6 +32,24 @@ export function buildTrack(city, lengthM, upm, seed) {
     return [Math.floor(mid - span / 2 - 5), Math.ceil(mid + span / 2 + 5)];
   });
   const blocked = (a, b) => zones.find((z) => a <= z[1] && b >= z[0]);
+  const finish = PAD + units;
+
+  // a city drawn from a real map gives its turns: [where (0..1 of the course), turn (rad, + = left)]
+  if (city.route) {
+    for (const [where, turn] of city.route) {
+      const len = Math.round(Math.min(70, Math.max(24, units * 0.1) * (0.6 + Math.abs(turn) * 0.5)));
+      let i = PAD + Math.round(where * units) - (len >> 1);
+      const z = blocked(i, i + len);
+      if (z) i = (i + len / 2 < (z[0] + z[1]) / 2 ? z[0] - len - 1 : z[1] + 1);   // slide the bend off a gate
+      const shape = (k) => Math.sin((Math.PI * (k + 0.5)) / len);
+      let sum = 0;
+      for (let k = 0; k < len; k++) sum += shape(k);
+      for (let k = 0; k < len; k++) if (i + k > PAD + 3 && i + k < total) segs[i + k].curve += (turn / (sum * TURN)) * shape(k);
+    }
+    segs[PAD].line = 1;
+    segs[finish].line = 2; segs[finish + 1].line = 3;
+    return { segs, start: PAD, finish, units, seed, lengthM };
+  }
 
   // gentle S-curves that steer back toward the starting direction
   let yaw = 0;
@@ -49,7 +67,6 @@ export function buildTrack(city, lengthM, upm, seed) {
     for (let k = 0; k < len && i + k < total; k++) { segs[i + k].curve = sign * mag * shape(k); yaw += segs[i + k].curve * TURN; }
     i += len;
   }
-  const finish = PAD + units;
   segs[PAD].line = 1;
   segs[finish].line = 2; segs[finish + 1].line = 3;
   return { segs, start: PAD, finish, units, seed, lengthM };
@@ -183,7 +200,7 @@ export class Race {
       const seg = track.segs[Math.floor(z)];
       items.push({ kind: 'rider', id: r.id, speed: r.speed, z, x: r.x, ch: r.ch, phase: r.phase, lean: seg ? seg.curve * 22 * Math.min(1, r.speed) : 0, name: r.name, me: r === me });
     }
-    return { city: this.city, track, camPos, camX: me.x * 0.85, items, t, speed01: Math.min(1, me.speed / maxSpeed) };
+    return { city: this.city, track, camPos, camX: me.x * 0.85, items, t, speed01: Math.min(1, me.speed / maxSpeed), kmh: me.speed * 3.6 };
   }
 
   // ---------- network ----------

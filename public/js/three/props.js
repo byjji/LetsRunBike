@@ -55,6 +55,10 @@ export const PROPS = {
   cherry: { sway: 1, build: () => roundTree('#ffb7d0', '#ffd0e0', 4.6) },
   maple: { sway: 1, build: () => roundTree('#e8502e', '#ff8a3d', 4.8) },
   pine: { sway: 0.5, build: () => pine('#2f8f55', false) },
+  // tall Korean red pine (소나무 숲길): long reddish trunk, flat crown high up
+  pine_tall: { sway: 0.3, build: () => group(
+    at(cyl(0.2, 0.34, 9.5, '#a0583a', 6), 0, 0, 0).rotateZ(0.05), beam([0.3, 6.5, 0], [1.4, 8.6, 0.3], 0.1, '#8a4a30'), beam([-0.2, 7.2, 0], [-1.3, 9, -0.3], 0.1, '#8a4a30'),
+    chip(2.2, '#2f7f4a', 0.4, 9.6, 0, [1.4, 0.5, 1.3]), chip(1.6, '#3a9058', 1.5, 8.9, 0.4, [1.3, 0.5, 1.2]), chip(1.5, '#2f7f4a', -1.3, 9.3, -0.4, [1.3, 0.5, 1.2]), chip(1.2, '#3a9058', 0.2, 10.6, 0.1, [1.2, 0.5, 1.2])) },
   pine_snow: { sway: 0.4, build: () => pine('#3a8a66', true) },
   cypress: { sway: 0.6, build: () => group(at(cyl(0.18, 0.25, 1.2, TRUNK, 6), 0, 0, 0), blob(1, '#2e7d4f', 0, 3.6, 0, [0.9, 2.9, 0.9])) },
   birch: { sway: 0.8, build: () => group(at(cyl(0.12, 0.2, 5.5, '#f1efe8', 6), 0, 0, 0), at(box(0.3, 0.12, 0.3, '#4a4a4a'), 0, 1.4, 0), at(box(0.28, 0.1, 0.28, '#4a4a4a'), 0, 3.1, 0),

@@ -129,9 +129,9 @@ function crowd(world) {
       people.forEach((p, i) => {
         sample(world.path, p.s, p.lat, _p);
         const near = Math.max(0, 1 - Math.abs(p.s - me - 6) / 22);
-        const hop = Math.abs(Math.sin(t * (5 + near * 3) + p.ph)) * (0.12 + near * 0.5);
+        const hop = Math.abs(Math.sin(t * (2.6 + near * 1.4) + p.ph)) * (0.08 + near * 0.32);   // gentle hops, a little more when the rider is near
         _d.position.set(_p.x, hop, _p.z);
-        _d.rotation.set(0, _p.yaw + p.side * (Math.PI / 2 + 0.5), Math.sin(t * 6 + p.ph) * 0.12);
+        _d.rotation.set(0, _p.yaw + p.side * (Math.PI / 2 + 0.5), Math.sin(t * 3 + p.ph) * 0.08);
         _d.scale.setScalar(p.sc);
         _d.updateMatrix();
         im.setMatrixAt(i, _d.matrix); im2.setMatrixAt(i, _d.matrix);
@@ -158,6 +158,9 @@ export const MOVER_KINDS = {
   boat: { cars: 1, len: 6, line: 'water', build: () => group(at(prism([[-1.1, 1], [1.1, 1], [0.7, 0], [-0.7, 0]], 5, '#ffffff'), 0, -0.2, 0), at(box(1.3, 1, 1.8, '#ff8a3d'), 0, 0.8, -0.6), beam([0, 0.8, 0.9], [0, 3.6, 0.9], 0.05, '#7a5a3a'), at(prism([[0, 0], [0, 2.4], [1.8, 0]], 0.05, '#fff7e0'), 0, 1.1, 0.95, Math.PI / 2)) },
   ferry: { cars: 1, len: 18, line: 'water', build: () => group(at(prism([[-3, 2], [3, 2], [2.3, 0], [-2.3, 0]], 18, '#ffffff'), 0, -0.3, 0), at(box(4.6, 1.8, 11, '#f4f1ea'), 0, 1.7, -0.5), at(box(4.7, 0.6, 10.4, '#3b8beb'), 0, 2.3, -0.5), at(box(3, 1.4, 5, '#ffffff'), 0, 3.5, 0), at(cyl(0.6, 0.7, 2, '#ff5a4d', 8), 0, 4.9, -1)) },
   cruise: { cars: 1, len: 14, line: 'water', build: () => group(at(prism([[-2.4, 1.4], [2.4, 1.4], [1.9, 0], [-1.9, 0]], 14, '#ffffff'), 0, -0.2, 0), at(box(3.8, 1.5, 9, '#bfe2f5'), 0, 1.2, 0), at(box(4, 0.25, 9.6, '#3b8beb'), 0, 2.7, 0), at(box(0.1, 1, 0.1, '#888'), 0, 2.9, 4)) },
+  srt: { cars: 6, len: 9, line: 'viaduct', build: (i, n, last) => { const c = trainCar(8.6, '#f4f4f6', '#7a2a5c', i === 0); c.add(at(box(2.68, 0.18, 8.6, '#c9a46a'), 0, 1.4, 0)); if (last) c.add(at(box(2.5, 2.2, 1.2, '#f4f4f6'), 0, 0.5, -4.6)); return c; } },
+  duckboat: { cars: 1, len: 4, line: 'water', build: () => group(at(box(2.4, 0.9, 3.6, '#ffffff'), 0, 0, 0), at(box(2.5, 0.2, 3.7, '#ffd23f'), 0, 0.9, 0), at(cyl(1.1, 1.1, 0.12, '#59c3ff', 10), 0, 2.3, -0.3),
+    beam([-1, 0.9, -1.2], [-1, 2.3, -0.3], 0.06, '#dddddd'), beam([1, 0.9, -1.2], [1, 2.3, -0.3], 0.06, '#dddddd'), at(cyl(0.35, 0.45, 1.4, '#ffd23f', 8), 0, 0.9, 1.6), at(sphere(0.6, '#ffd23f', 8), 0, 2.5, 1.8), at(cone(0.22, 0.6, '#ff8a3d', 6), 0, 2.4, 2.4).rotateX(Math.PI / 2)) },
   gondola: { cars: 4, len: 14, line: 'cable', build: () => group(at(box(1.5, 1.5, 1.7, '#ff5a7a'), 0, -2.3, 0), at(box(1.54, 0.6, 1.5, '#dff3ff'), 0, -1.6, 0), beam([0, -0.8, 0], [0, 0, 0], 0.05, '#555')) },
 };
 const LINES = {
@@ -329,6 +332,29 @@ export const FLOATER_KINDS = {
         const v = u / 0.5, top = lm.def.h * 0.55;
         g.position.set(fx + (tx - fx) * v, 2 + top * (1 - v) * (1 - v) + Math.sin(v * Math.PI) * 4, fz + (tz - fz) * v);
         g.lookAt(tx, 2, tz); g.rotateX(0.2);
+      },
+    };
+  },
+  /** music fountain on the lake the road crosses: jets rise and fall in waves */
+  fountain(world) {
+    const lm = world.layout.landmarks.find((m) => m.def.id === 'dongtan_lakepark'); if (!lm) return { update() {} };
+    const jets = [];
+    for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; jets.push({ s: lm.s + Math.sin(a) * 9 * Math.min(1, lm.span / 22), lat: -(30 + Math.cos(a) * 9), k: i }); }
+    jets.push({ s: lm.s, lat: -30, k: 12, big: true });
+    for (let i = 0; i < 6; i++) jets.push({ s: lm.s + (i - 2.5) * Math.min(5, lm.span / 8), lat: 20 + (i % 2) * 4, k: 13 + i });
+    const im = instanced(world, group(at(cyl(0.18, 0.55, 1, '#e8f7ff', 7), 0, 0, 0), at(sphere(0.6, '#ffffff', 7), 0, 1, 0, 0, [1, 0.3, 1])), jets.length);
+    jets.forEach((j, i) => im.setColorAt(i, _c.set('#ffffff')));
+    return {
+      update(camS, t) {
+        const beat = Math.floor(t / 4) % 3;
+        jets.forEach((j, i) => {
+          const wave = beat === 0 ? Math.sin(t * 2.2 + j.k * 0.52) : beat === 1 ? Math.sin(t * 3) * (j.k % 2 ? 1 : -1) : Math.sin(t * 1.4);
+          const h = (j.big ? 9 : 3) + (j.big ? 9 : 5) * (0.5 + 0.5 * wave);
+          sample(world.path, j.s, j.lat, _p);
+          _d.position.set(_p.x, WATER_Y, _p.z); _d.rotation.set(0, 0, 0); _d.scale.set(1, h, 1); _d.updateMatrix();
+          im.setMatrixAt(i, _d.matrix);
+        });
+        im.instanceMatrix.needsUpdate = true;
       },
     };
   },

@@ -44,7 +44,9 @@ export function layoutCity(city, track, lengthUnits, seed) {
   const props = [];
   const path = buildPath(track.segs), far = [], o = {};   // far props are checked in world space: on bends the land folds over itself
   for (let i = 0; i < total; i++) {
+    const u = (i - track.start) / lengthUnits;   // 0 at the start line, 1 at the finish
     for (const rule of city.roadside) {
+      if (rule.from != null && (u < rule.from || u >= rule.to)) continue;   // only along part of the course
       if (r() >= rule.p) continue;
       const side = rule.side || (r() < 0.5 ? -1 : 1);
       const n = rule.n[Math.floor(r() * rule.n.length)];
@@ -56,6 +58,8 @@ export function layoutCity(city, track, lengthUnits, seed) {
       if (Math.abs(s - track.start) < 2.5 || Math.abs(s - track.finish) < 2.5) { if (dist < RW + 3) continue; }
       const lateral = side * dist;
       if (besides.some((m) => Math.hypot(s - m.s, lateral - m.lateral) < keepOut(m.def))) continue;
+      // a landmark in a forest gets an opening between it and the road so it can be seen
+      if (besides.some((m) => m.def.clearing && Math.sign(lateral) === Math.sign(m.lateral) && Math.abs(s - m.s) < m.def.clearing)) continue;
       // footprint: far-off rules are buildings, near ones are trees and small things
       const rad = rule.r ?? (rule.min >= 20 ? 9 : rule.min >= 8 ? 5.5 : rule.min >= 2 ? 1.6 : 0.6);
       if (lanes.some((l) => Math.abs(lateral - l) < 2.6 + rad)) continue;
@@ -66,7 +70,7 @@ export function layoutCity(city, track, lengthUnits, seed) {
       }
       if (clash) continue;
       const k = rule.scale || 1;
-      if (dist >= 24) {
+      if (dist >= 24 || rad >= 5) {
         sample(path, s, lateral, o);
         const x = o.x, z = o.z, lo = Math.max(0, Math.floor(s - dist * 2.2)), hi = Math.min(path.n, Math.ceil(s + dist * 2.2));
         let bad = false;

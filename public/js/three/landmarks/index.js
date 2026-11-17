@@ -6,10 +6,11 @@ import { RW } from '../../path.js';
 import { bake } from '../kit.js';
 import { KR } from './kr.js';
 import { KR2 } from './kr2.js';
+import { KR3 } from './kr3.js';
 import { JP } from './jp.js';
 import { US } from './us.js';
 
-export const LANDMARKS = { ...KR, ...KR2, ...JP, ...US };
+export const LANDMARKS = { ...KR, ...KR2, ...KR3, ...JP, ...US };
 
 /** Coded landmark, baked. Beside-the-road landmarks are scaled so their top is at def.h. */
 export function buildLandmark(def, span = def.span) {
